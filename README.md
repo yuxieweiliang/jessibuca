@@ -15,6 +15,23 @@ Jessibuca是一款开源的纯H5直播流播放器，通过Emscripten将音视�
 注：以http-flv请求时，存在跨域请求的问题，需要设置access-control-allow-origin, websocket-flv默认不存在此问题
 - 支持HTTPS/WSS加密视频传输，保证视频内容传输安全
 - 手机浏览器内打开视频不会变成全屏播放
+- 手机浏览器内打开长时间不会息屏
+- 支持解码8kHz PCM_ALAW, PCM_MULAW的G.711音频
+- 支持填充，等比，等比缩放 3中视频缩放模式
+- 自带底部UI,支持原子化配置是否显示(播放/暂停、音量调节、截屏、录制/暂停录制、全屏/取消全屏、流量显示)
+- 支持OffscreenCanvas，提升Webgl渲染性能。
+- 支持WebWorker多核解码，提升多画面播放性能。
+- 支持WebCodecs硬件解码API
+- 支持MediaSourceExtensions 硬件解码
+- 支持视频录制(WebM、MP4格式)
+
+## 开发中
+- 支持录制MP4格式(MPEG-4)的视频录制
+- 支持webrtc标准流播放
+- 支持语音通讯：支持采集PCM/G711A/G711U格式的数据、支持采样率16000Hz或8000Hz，采样精度32bits或者16bits，支持单通道或双通道
+- 支持音视频流的倍数播放
+- 支持HLS协议
+
 
 ## 本地测试
 
@@ -22,12 +39,22 @@ Jessibuca是一款开源的纯H5直播流播放器，通过Emscripten将音视�
 - 执行yarn dev 或者 npm run dev
 
 ## API
-[API](/api.md)
+[API](/demo/api.md)
+
+
+## HTTP 地址
+
+[http://jessibuca.monibuca.com/](http://jessibuca.monibuca.com/)
+
+## HTTPS 地址
+
+[https://j.m7s.live/](https://j.m7s.live/)
+
 
 ## 源码目录结构
 
-- obj 存放emscripten编译好的ffmpeg解码库的字节码库
-- demo/public 存放编译输出的js和wasm文件
+- wasm/obj 存放emscripten编译好的ffmpeg解码库的字节码库
+- dist 存放编译输出的js和wasm文件
 - src 存放js源码
 
 ## 打包js
@@ -35,8 +62,12 @@ Jessibuca是一款开源的纯H5直播流播放器，通过Emscripten将音视�
 执行yarn build 或者 npm run build
 
 ## 引用关系
-src/index.js 引用了jessibuca.js和worker.js 目的是将两个js打包到一起，实际执行中会根据当前是否为主线程来判断是否加载worker线程（把自己加载到webworker中）
-worker.js 会引用 demo/public/ff.js （该文件由编译C++文件所得，用于加载wasm）
+
+- jessibuca.js 是业务js代码
+- decoder.js 是worker进程跑的负责音视频解码的js代码
+- decoder.wasm 是decoder.js的胶水代码
+
+
 
 ## 编译C++代码
 
@@ -45,3 +76,7 @@ worker.js 会引用 demo/public/ff.js （该文件由编译C++文件所得，用
 ## 基本原理
 
 <img src="/demo/public/tech.png">
+
+
+## 支持
+<img src="/demo/public/wx.jpg"><img src="/demo/public/alipay.jpg">

@@ -1,6 +1,7 @@
 import Module from './decoder/decoder'
 import createWebGL from './utils/webgl';
-import {WORKER_CMD_TYPE, MEDIA_TYPE, WORKER_SEND_TYPE} from "./constant";
+import {WORKER_CMD_TYPE, MEDIA_TYPE, WORKER_SEND_TYPE, ENCODED_VIDEO_TYPE} from "./constant";
+import {formatVideoDecoderConfigure} from "./utils";
 
 if (!Date.now) Date.now = function () {
     return new Date().getTime();
@@ -15,11 +16,84 @@ Module.printErr = function (text) {
 
 Module.postRun = function () {
     var buffer = []
+    var wcsVideoDecoder = {};
+    if ("VideoEncoder" in self) {
+        wcsVideoDecoder = {
+            hasInit: false,
+            isEmitInfo: false,
+            offscreenCanvas: null,
+            offscreenCanvasCtx: null,
+            decoder: new VideoDecoder({
+                output: function (videoFrame) {
+                    if (!wcsVideoDecoder.isEmitInfo) {
+                        decoder.opt.debug && console.log('Jessibuca: [worker] Webcodecs Video Decoder initSize');
+                        postMessage({
+                            cmd: WORKER_CMD_TYPE.initVideo,
+                            w: videoFrame.codedWidth,
+                            h: videoFrame.codedHeight
+                        })
+                        wcsVideoDecoder.isEmitInfo = true;
+                        wcsVideoDecoder.offscreenCanvas = new OffscreenCanvas(videoFrame.codedWidth, videoFrame.codedHeight);
+                        wcsVideoDecoder.offscreenCanvasCtx = wcsVideoDecoder.offscreenCanvas.getContext("2d");
+                    }
+
+                    wcsVideoDecoder.offscreenCanvasCtx.drawImage(videoFrame, 0, 0, videoFrame.codedWidth, videoFrame.codedHeight);
+                    let image_bitmap = wcsVideoDecoder.offscreenCanvas.transferToImageBitmap();
+                    postMessage({
+                        cmd: WORKER_CMD_TYPE.render,
+                        buffer: image_bitmap,
+                        delay: decoder.delay,
+                        ts: 0
+                    }, [image_bitmap])
+
+                    setTimeout(function () {
+                        if (videoFrame.close) {
+                            videoFrame.close()
+                        } else {
+                            videoFrame.destroy()
+                        }
+                    }, 100)
+
+                },
+                error: function (error) {
+                    console.error(error);
+                }
+            }),
+            decode: function (payload, ts) {
+                const isIframe = payload[0] >> 4 === 1;
+                if (!wcsVideoDecoder.hasInit) {
+                    if (isIframe && payload[1] === 0) {
+                        const videoCodec = (payload[0] & 0x0F);
+                        decoder.setVideoCodec(videoCodec);
+                        const config = formatVideoDecoderConfigure(payload.slice(5));
+                        wcsVideoDecoder.decoder.configure(config);
+                        wcsVideoDecoder.hasInit = true;
+                    }
+                } else {
+                    const chunk = new EncodedVideoChunk({
+                        data: payload.slice(5),
+                        timestamp: ts,
+                        type: isIframe ? ENCODED_VIDEO_TYPE.key : ENCODED_VIDEO_TYPE.delta
+                    })
+                    wcsVideoDecoder.decoder.decode(chunk);
+                }
+            },
+            reset() {
+                wcsVideoDecoder.hasInit = false;
+                wcsVideoDecoder.isEmitInfo = false;
+                wcsVideoDecoder.offscreenCanvas = null;
+                wcsVideoDecoder.offscreenCanvasCtx = null;
+            }
+        }
+    }
+
     var decoder = {
         opt: {},
+        useOffscreen: function () {
+            return !this.opt.forceNoOffscreen && typeof OffscreenCanvas != 'undefined';
+        },
         initAudioPlanar: function (channels, samplerate) {
-            decoder.opt.debug && console.log('Jessibuca[worker] initAudio', `samplerate:${samplerate},channels:${channels}`);
-            postMessage({cmd: WORKER_CMD_TYPE.initAudio, samplerate: samplerate, channels: channels})
+            postMessage({cmd: WORKER_CMD_TYPE.initAudio, sampleRate: samplerate, channels: channels})
             var buffer = []
             var outputArray = [];
             var remain = 0
@@ -73,12 +147,17 @@ Module.postRun = function () {
                 }
             }
         },
+        setVideoCodec: function (code) {
+            postMessage({cmd: WORKER_CMD_TYPE.videoCode, code})
+        },
+        setAudioCodec: function (code) {
+            postMessage({cmd: WORKER_CMD_TYPE.audioCode, code})
+        },
         setVideoSize: function (w, h) {
-            decoder.opt.debug && console.log('Jessibuca[worker] setVideoSize', `w:${w},h:${h}`);
             postMessage({cmd: WORKER_CMD_TYPE.initVideo, w: w, h: h})
             var size = w * h
             var qsize = size >> 2
-            if (!this.opt.forceNoOffscreen && typeof OffscreenCanvas != 'undefined') {
+            if (decoder.useOffscreen()) {
                 this.offscreenCanvas = new OffscreenCanvas(w, h);
                 this.offscreenCanvasGL = this.offscreenCanvas.getContext("webgl");
                 this.webglObj = createWebGL(this.offscreenCanvasGL)
@@ -88,6 +167,7 @@ Module.postRun = function () {
                     postMessage({
                         cmd: WORKER_CMD_TYPE.render,
                         buffer: image_bitmap,
+                        delay: this.delay,
                         ts
                     }, [image_bitmap])
                 }
@@ -98,6 +178,7 @@ Module.postRun = function () {
                     postMessage({
                         cmd: WORKER_CMD_TYPE.render,
                         output: outputArray,
+                        delay: this.delay,
                         ts
                     }, outputArray.map(x => x.buffer))
                 }
@@ -117,7 +198,16 @@ Module.postRun = function () {
             return -1
         },
         init: function () {
-            decoder.opt.debug && console.log('Jessibuca[worker] init');
+            decoder.opt.debug && console.log('Jessibuca: [worker] init');
+            const _doDecode = (data) => {
+                // this.opt.debug && console.log('Jessibuca: [worker]: _doDecode');
+                if (decoder.opt.useWCS && decoder.useOffscreen() && data.type === MEDIA_TYPE.video && wcsVideoDecoder.decode) {
+                    wcsVideoDecoder.decode(data.payload, data.ts)
+                } else {
+                    // this.opt.debug && console.log('Jessibuca: [worker]: _doDecode  wasm');
+                    data.decoder.decode(data.payload, data.ts)
+                }
+            }
             const loop = () => {
                 if (buffer.length) {
                     if (this.dropping) {
@@ -130,13 +220,13 @@ Module.postRun = function () {
 
                         if (data.isIFrame) {
                             this.dropping = false;
-                            data.decoder.decode(data.payload, data.ts)
+                            _doDecode(data);
                         }
                     } else {
                         var data = buffer[0]
                         if (this.getDelay(data.ts) === -1) {
                             buffer.shift()
-                            data.decoder.decode(data.payload, data.ts)
+                            _doDecode(data);
                         } else if (this.delay > this.opt.videoBuffer + 1000) {
                             this.dropping = true
                         } else {
@@ -145,7 +235,7 @@ Module.postRun = function () {
                                 if (this.getDelay(data.ts) > this.opt.videoBuffer) {
                                     // 丢帧。。。
                                     buffer.shift()
-                                    data.decoder.decode(data.payload, data.ts)
+                                    _doDecode(data);
                                 } else {
                                     break
                                 }
@@ -157,11 +247,12 @@ Module.postRun = function () {
             this.stopId = setInterval(loop, 10);
         },
         close: function () {
-            this.opt.debug && console.log('Jessibuca[worker]: close');
+            this.opt.debug && console.log('Jessibuca: [worker]: close');
             clearInterval(this.stopId);
             this.stopId = null;
             audioDecoder.clear();
             videoDecoder.clear();
+            wcsVideoDecoder.reset && wcsVideoDecoder.reset();
             this.firstTimestamp = 0;
             this.startTimestamp = 0;
             this.delay = -1;
@@ -169,6 +260,7 @@ Module.postRun = function () {
                 this.webglObj.destroy();
                 this.offscreenCanvas = null;
                 this.offscreenCanvasGL = null;
+                this.offscreenCanvasCtx = null;
             }
             buffer = [];
             delete this.playAudioPlanar;
@@ -196,7 +288,7 @@ Module.postRun = function () {
     }
     var audioDecoder = new Module.AudioDecoder(decoder)
     var videoDecoder = new Module.VideoDecoder(decoder)
-    postMessage({cmd: "init"})
+    postMessage({cmd: WORKER_SEND_TYPE.init})
     self.onmessage = function (event) {
         var msg = event.data
         switch (msg.cmd) {

@@ -4,7 +4,10 @@ Debug
 *.zip
 *.rar
 node_modules
-dist
 .idea
 .cache
 .parcel-cache
+demo/.vitepress/dist
+yarn.lock
+package-lock.json
+

@@ -144,6 +144,7 @@ public:
         }
         else
         {
+            jsObject.call<void>("setAudioCodec", audioType);
             switch (audioType)
             {
             case 10:
@@ -247,6 +248,7 @@ public:
             if (((int)(data[0]) >> 4) == 1 && data[1] == 0)
             {
                 //                emscripten_log(0, "codec = %d", codec_id);
+                jsObject.call<void>("setVideoCodec", codec_id);
                 switch (codec_id)
                 {
                 case 7:
