@@ -27,7 +27,17 @@
                 /><span>webcodecs</span>
 
             </div>
-            <div id="container" ref="container"></div>
+
+            <div class="video-list-container" style="">
+                <div
+                    v-for="item in videoArray"
+                    :key="item.index"
+                    :id="'container' + item.index"
+                    :ref="'container' + item.index"
+                    class="video-list-item"
+                ></div>
+            </div>
+
             <div class="input">
                 <div>输入URL：</div>
                 <input
@@ -77,30 +87,6 @@
                     <span v-if="performance">性能：{{ performance }}</span>
                 </div>
             </div>
-            <div class="input" v-if="loaded">
-                <input
-                    type="checkbox"
-                    ref="offscreen"
-                    v-model="useOffscreen"
-                    @change="restartPlay('offscreen')"
-                /><span>离屏渲染</span>
-
-                <select v-model="scale" @change="scaleChange">
-                    <option value="0">完全填充(拉伸)</option>
-                    <option value="1">等比缩放</option>
-                    <option value="2">完全填充(未拉伸)</option>
-                </select>
-                <button v-if="!playing" @click="clearView">清屏</button>
-                <template v-if="playing">
-                    <select v-model="recordType">
-                        <option value="webm">webm</option>
-                        <option value="mp4">mp4</option>
-                    </select>
-                    <button v-if="!recording" @click="startRecord">录制</button>
-                    <button v-if="!recording" @click="stopAndSaveRecord">暂停录制</button>
-                </template>
-
-            </div>
         </div>
     </div>
 </template>
@@ -108,10 +94,20 @@
 import '../public/jessibuca.js';
 import { VERSION } from "./version";
 
+console.log(jessibuca);
+
 export default {
     name: "DemoPlayer",
     props: {},
     data() {
+        const array32 = new Array(64);
+        const url = 'ws://8.142.19.151:6010/jessica/1466683953296576512';
+        var videoArray = array32.fill(null).map((_, index) => ({
+            url,
+            index,
+            jessibuca: null
+        }));
+
         return {
             jessibuca: null,
             version: '',
@@ -133,6 +129,7 @@ export default {
             recording: false,
             recordType: 'webm',
             scale: 0,
+            videoArray,
         };
     },
     mounted() {
@@ -147,138 +144,49 @@ export default {
         create(options) {
             options = options || {};
 
-            console.log(this.$refs.container);
-            this.jessibuca = new window.Jessibuca(
-                Object.assign(
-                    {
-                        container: this.$refs.container,
-                        videoBuffer: Number(this.$refs.buffer.value), // 缓存时长
-                        isResize: false,
-                        useWCS: this.useWCS,
-                        useMSE: this.useMSE,
-                        text: "",
-                        // background: "bg.jpg",
-                        loadingText: "疯狂加载中...",
-                        // hasAudio:false,
-                        debug: false,
-                        supportDblclickFullscreen: true,
-                        showBandwidth: this.showBandwidth, // 显示网速
-                        operateBtns: {
-                            fullscreen: this.showOperateBtns,
-                            screenshot: this.showOperateBtns,
-                            play: this.showOperateBtns,
-                            audio: this.showOperateBtns,
+            this.videoArray.forEach(item => {
+                console.log(this.$refs['container' + item.index][0]);
+                item.jessibuca = new window.Jessibuca(
+                    Object.assign(
+                        {
+                            container: this.$refs['container' + item.index][0],
+                            videoBuffer: Number(this.$refs.buffer.value), // 缓存时长
+                            isResize: false,
+                            useWCS: this.useWCS,
+                            useMSE: this.useMSE,
+                            text: "",
+                            // background: "bg.jpg",
+                            loadingText: "疯狂加载中...",
+                            // hasAudio:false,
+                            debug: false,
+                            supportDblclickFullscreen: true,
+                            showBandwidth: this.showBandwidth, // 显示网速
+                            operateBtns: {
+                                fullscreen: this.showOperateBtns,
+                                screenshot: this.showOperateBtns,
+                                play: this.showOperateBtns,
+                                audio: this.showOperateBtns,
+                            },
+                            vod: this.vod,
+                            forceNoOffscreen: !this.useOffscreen,
+                            isNotMute: true,
+                            timeout: 10
                         },
-                        vod: this.vod,
-                        forceNoOffscreen: !this.useOffscreen,
-                        isNotMute: true,
-                        timeout: 10
-                    },
-                    options
-                )
-            );
-            var _this = this;
-            this.jessibuca.on("load", function () {
-                console.log("on load");
-            });
-
-            this.jessibuca.on("log", function (msg) {
-                console.log("on log", msg);
-            });
-            this.jessibuca.on("record", function (msg) {
-                console.log("on record:", msg);
-            });
-            this.jessibuca.on("pause", function () {
-                console.log("on pause");
-                _this.playing = false;
-            });
-            this.jessibuca.on("play", function () {
-                console.log("on play");
-                _this.playing = true;
-            });
-            this.jessibuca.on("fullscreen", function (msg) {
-                console.log("on fullscreen", msg);
-            });
-
-            this.jessibuca.on("mute", function (msg) {
-                console.log("on mute", msg);
-                _this.quieting = msg;
-            });
-
-            this.jessibuca.on("mute", function (msg) {
-                console.log("on mute2", msg);
-            });
-
-            this.jessibuca.on("audioInfo", function (msg) {
-                console.log("audioInfo", msg);
-            });
-
-            this.jessibuca.on("bps", function (bps) {
-                // console.log('bps', bps);
-            });
-            // let _ts = 0;
-            // this.jessibuca.on("timeUpdate", function (ts) {
-            //     console.log('timeUpdate,old,new,timestamp', _ts, ts, ts - _ts);
-            //     _ts = ts;
-            // });
-
-            this.jessibuca.on("videoInfo", function (info) {
-                console.log("videoInfo", info);
-            });
-
-            this.jessibuca.on("error", function (error) {
-                console.log("error", error);
-            });
-
-            this.jessibuca.on("timeout", function () {
-                console.log("timeout");
-            });
-
-            this.jessibuca.on('start', function () {
-                console.log('frame start');
-            })
-
-            this.jessibuca.on("performance", function (performance) {
-                var show = "卡顿";
-                if (performance === 2) {
-                    show = "非常流畅";
-                } else if (performance === 1) {
-                    show = "流畅";
-                }
-                _this.performance = show;
-            });
-            this.jessibuca.on('buffer', function (buffer) {
-                console.log('buffer', buffer);
-            })
-
-            this.jessibuca.on('stats', function (stats) {
-                console.log('stats', stats);
-            })
-
-            this.jessibuca.on('kBps', function (kBps) {
-                console.log('kBps', kBps);
-            });
-
-            this.jessibuca.on("play", () => {
-                this.playing = true;
-                this.loaded = true;
-                this.quieting = this.jessibuca.isMute();
-            });
-
-            this.jessibuca.on('recordingTimestamp', (ts) => {
-                console.log('recordingTimestamp', ts);
-            })
-
+                        options
+                    )
+                );
+            }) ;
 
             // console.log(this.jessibuca);
         },
         play() {
-            // this.jessibuca.onPlay = () => (this.playing = true);
-
-
-            if (this.$refs.playUrl.value) {
-                this.jessibuca.play(this.$refs.playUrl.value);
-            }
+            var timeout = 0;
+            this.videoArray.forEach((item, index) => {
+                timeout += index * 100;
+                setTimeout(() => {
+                    item.jessibuca.play(item.url);
+                }, timeout);
+            });
         },
         mute() {
             this.jessibuca.mute();
@@ -393,6 +301,19 @@ export default {
     background: rgba(13, 14, 27, 0.7);
     width: 640px;
     height: 398px;
+}
+
+.video-list-container {
+    display: flex;
+    flex-wrap: wrap;
+    width: 140vh;
+    height: 100vh;
+}
+
+.video-list-item {
+    background: rgba(13, 14, 27, 0.7);
+    width: 20vh;
+    height: 10vh;
 }
 
 .input {

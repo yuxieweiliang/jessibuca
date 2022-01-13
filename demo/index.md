@@ -5,7 +5,7 @@ heroText: Jessibuca
 tagline: 纯H5直播流播放器
 actionText: 打开播放器
 actionLink: /player
-sidebarDepth: 2
+sidebarDepth: 3
 sidebar: auto
 features:
 - title: 无插件
