@@ -36,7 +36,6 @@ export default class VideoLoader extends CommonLoader {
         })
 
         this.player.debug.log('Video', 'init');
-
     }
 
     play() {

@@ -5,7 +5,6 @@ export default (player, control) => {
     const options = player._opt;
     const operateBtns = options.operateBtns;
 
-
     player.$container.insertAdjacentHTML(
         'beforeend',
         `

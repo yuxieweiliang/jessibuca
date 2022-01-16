@@ -26,6 +26,7 @@ class Jessibuca extends Emitter {
             return;
         }
 
+        console.log('-------------------------', options);
         $container.classList.add('jessibuca-container');
 
         delete _opt.container;
@@ -423,5 +424,6 @@ class Jessibuca extends Emitter {
 
 
 window.Jessibuca = Jessibuca;
+window.Sullivan  = Jessibuca;
 
 export default Jessibuca;

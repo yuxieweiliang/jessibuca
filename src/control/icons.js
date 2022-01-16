@@ -9,12 +9,19 @@ const iconsMap = {
     fullscreenExit: '退出全屏',
     record: '录制',
     recordStop: '停止录制',
-}
+    movement: '云台控制',
+    movementEnable: '云台控制', // 启用
+    transform3D: '3D变换',
+    transform3DEnable: '3D变换', // 启用
+    zoomIn: '放大',
+    zoomOut: '缩小',
+};
 
 export default Object.keys(iconsMap).reduce((icons, key) => {
-    icons[key] = `
-    <i class="jessibuca-icon jessibuca-icon-${key}"></i>
-    ${iconsMap[key] ? `<span class="icon-title-tips"><span class="icon-title">${iconsMap[key]}</span></span>` : ''}
-`;
+    icons[key] = `<i class="jessibuca-icon jessibuca-icon-${key}"></i>`;
+    if (iconsMap[key]) {
+        icons[key] += `<span class="icon-title-tips"><span class="icon-title">${iconsMap[key]}</span></span>`;
+    }
+
     return icons;
 }, {});

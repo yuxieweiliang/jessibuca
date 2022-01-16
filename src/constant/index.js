@@ -31,7 +31,14 @@ export const DEFAULT_PLAYER_OPTIONS = {
         screenshot: false,
         play: false,
         audio: false,
-        record: false
+        // 录制屏幕
+        record: false,
+        // 云台控制
+        movement: false,
+        // 变换 3D
+        transform: false,
+        // 放大缩小
+        zoom: false,
     },
     hasControl: false,
     loadingText: '',

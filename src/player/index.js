@@ -129,6 +129,10 @@ export default class Player extends Emitter {
             this.debug.log('Player', 'use offscreen')
         }
 
+        if (typeof this._opt.controlReset === 'function') {
+            this._opt.controlReset(this)
+        }
+
         this.debug.log('Player options', this._opt);
     }
 

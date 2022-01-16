@@ -46,7 +46,9 @@ export default class RecordRTCLoader extends Emitter {
 
             const stream = this.player.video.$videoElement.captureStream(25);
             const audioStream = this.player.audio.mediaStreamAudioDestinationNode.stream;
-            stream.addTrack(audioStream.getAudioTracks()[0]);
+            if (this.player.hasAudio) {
+                stream.addTrack(audioStream.getAudioTracks()[0]);
+            }
             this.recorder = RecordRTC(stream, options);
         } catch (e) {
             debug.error('Recorder', e);
@@ -54,7 +56,7 @@ export default class RecordRTCLoader extends Emitter {
         }
         if (this.recorder) {
             this.isRecording = true;
-            this.emit(EVENTS.recording, true);
+            this.player.emit(EVENTS.recording, true);
             this.recorder.startRecording();
             debug.log('Recorder', 'start recording');
             this.player.emit(EVENTS.recordStart);
@@ -74,7 +76,7 @@ export default class RecordRTCLoader extends Emitter {
             this.player.emit(EVENTS.recordEnd)
             downloadRecord(this.recorder.getBlob(), this.fileName, this.fileType);
             this._reset();
-            this.emit(EVENTS.recording, false);
+            this.player.emit(EVENTS.recording, false);
         })
     }
 

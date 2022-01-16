@@ -1,6 +1,14 @@
 {
-    "name": "jessibuca",
+    "name": "sullivan-core-v3",
     "version": "1.0.0",
+    "browser": "demo/public/jessibuca.js",
+    "main": "demo/public/jessibuca.js",
+    "directories": {
+        "lib": "lib"
+    },
+    "files": [
+        "lib"
+    ],
     "scripts": {
         "build": "npx cross-env NODE_ENV=production rollup -c",
         "build:wasm": "python wasm/make.py --wasm && npm run build && npm run build:demo",
