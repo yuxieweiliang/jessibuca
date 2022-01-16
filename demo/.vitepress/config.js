@@ -15,6 +15,11 @@ module.exports = {
         logo: 'logo.png',
     },
     head: [
+<<<<<<< HEAD
         // ['script', {src: '/jessibuca.js'}]
+=======
+        ['script', {src: '/jessibuca.js'}],
+        ['script', {src: '/vconsole.js'}]
+>>>>>>> 4b111d55a92c7a175512b3b48f08ae694e487765
     ]
 }

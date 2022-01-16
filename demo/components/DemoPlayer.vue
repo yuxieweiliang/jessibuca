@@ -133,15 +133,21 @@ export default {
             recording: false,
             recordType: 'webm',
             scale: 0,
+<<<<<<< HEAD
+=======
+            vConsole:null
+>>>>>>> 4b111d55a92c7a175512b3b48f08ae694e487765
         };
     },
     mounted() {
+        this.vConsole = new window.VConsole();
         this.version = VERSION === '#VERSION#' ? '' : VERSION;
         this.create();
         window.onerror = (msg) => (this.err = msg);
     },
     unmounted() {
         this.jessibuca.destroy();
+        this.vConsole.destroy();
     },
     methods: {
         create(options) {
