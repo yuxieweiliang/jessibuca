@@ -26,6 +26,7 @@ export const DEFAULT_PLAYER_OPTIONS = {
     isNotMute: false,
     hasAudio: true,
     hasVideo: true,
+    useWebRTC: true,
     operateBtns: {
         fullscreen: false,
         screenshot: false,

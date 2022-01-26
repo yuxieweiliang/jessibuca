@@ -66,6 +66,7 @@
 	  isNotMute: false,
 	  hasAudio: true,
 	  hasVideo: true,
+	  useWebRTC: true,
 	  operateBtns: {
 	    fullscreen: false,
 	    screenshot: false,
@@ -341,7 +342,10 @@
 	var property$1 = (player => {
 	  Object.defineProperty(player, 'rect', {
 	    get: () => {
-	      return player.$container.getBoundingClientRect();
+	      const clientRect = player.$container.getBoundingClientRect();
+	      clientRect.width = Math.max(clientRect.width, player.$container.clientWidth);
+	      clientRect.height = Math.max(clientRect.height, player.$container.clientHeight);
+	      return clientRect;
 	    }
 	  });
 	  ['bottom', 'height', 'left', 'right', 'top', 'width'].forEach(key => {
@@ -1756,6 +1760,12 @@
 	    const {
 	      demux
 	    } = this.player;
+
+	    if (!demux) {
+	      this.player.debug.warn('websocketLoader', 'websocket handle message demux is null');
+	      return;
+	    }
+
 	    demux.dispatch(message);
 	  }
 
@@ -8057,7 +8067,6 @@
 	    this._reset();
 
 	    this.player.debug.log('Recorder', 'destroy');
-	    this.player = null;
 	  }
 
 	}
@@ -8221,13 +8230,12 @@
 	  }
 
 	  destroy() {
-	    this.player.debug.log(`decoderWorker`, 'destroy');
 	    this.decoderWorker.postMessage({
 	      cmd: WORKER_SEND_TYPE.close
 	    });
 	    this.decoderWorker.terminate();
 	    this.decoderWorker = null;
-	    this.player = null;
+	    this.player.debug.log(`decoderWorker`, 'destroy');
 	  }
 
 	}
@@ -8698,7 +8706,6 @@
 	    this.isInitInfo = false;
 	    this.off();
 	    this.player.debug.log('Webcodecs', 'destroy');
-	    this.player = null;
 	  }
 
 	}
@@ -9118,8 +9125,6 @@
 	  }
 
 	  destroy() {
-	    this.player.debug.log('control', 'destroy');
-
 	    if (this.$poster) {
 	      this.player.$container.removeChild(this.$poster);
 	    }
@@ -9130,7 +9135,7 @@
 	      this.player.$container.removeChild(this.$controls);
 	    }
 
-	    this.player = null;
+	    this.player.debug.log('control', 'destroy');
 	  }
 
 	}
@@ -10641,6 +10646,70 @@
 
 	}
 
+	async function WebRTCVideo(player) {
+	  let pc = new RTCPeerConnection();
+	  const streamPath = player._opt.url;
+	  const $video = player.$container.$videoElement;
+	  const pcConfig = {
+	    iceConnectionState: pc && pc.iceConnectionState,
+	    stream: null,
+	    localSDP: "",
+	    remoteSDP: "",
+	    remoteSDPURL: "",
+	    localSDPURL: "",
+	    streamPath: ""
+	  };
+	  pc.addTransceiver('video', {
+	    direction: 'recvonly'
+	  });
+	  pcConfig.streamPath = streamPath;
+
+	  pc.onsignalingstatechange = e => {//console.log(e);
+	  };
+
+	  pc.oniceconnectionstatechange = e => {
+	    pcConfig.iceConnectionState = pc.iceConnectionState;
+	  };
+
+	  pc.onicecandidate = event => {// console.log(event)
+	  };
+
+	  pc.ontrack = event => {
+	    console.log('event: => ', event);
+
+	    if (event.track.kind == "video") {
+	      pcConfig.stream = event.streams[0];
+	      $video.srcObject = pcConfig.stream;
+	      $video.play();
+	    }
+	  };
+
+	  await pc.setLocalDescription(await pc.createOffer());
+	  pcConfig.localSDP = pc.localDescription.sdp;
+	  pcConfig.localSDPURL = URL.createObjectURL(new Blob([pcConfig.localSDP], {
+	    type: "text/plain"
+	  }));
+	  const result = await fetch(pcConfig.streamPath, {
+	    method: "POST",
+	    body: JSON.stringify(pc.localDescription.toJSON()),
+	    headers: {
+	      'Content-Type': 'application/json;charset=UTF-8'
+	    }
+	  }).then(res => res.json());
+
+	  if (result.errmsg) {
+	    console.error(result.errmsg);
+	    return;
+	  } else {
+	    pcConfig.remoteSDP = result.sdp;
+	    pcConfig.remoteSDPURL = URL.createObjectURL(new Blob([pcConfig.remoteSDP], {
+	      type: "text/plain"
+	    }));
+	  }
+
+	  await pc.setRemoteDescription(new RTCSessionDescription(result));
+	}
+
 	class Player extends Emitter {
 	  constructor(container, options) {
 	    super();
@@ -10929,49 +10998,60 @@
 
 	      this._opt.url = url;
 	      this.clearCheckHeartTimeout();
-	      this.init().then(() => {
-	        //
+	      console.log('useWebRTC', this); // 使用WebRTC
+
+	      if (this._opt.useWebRTC) {
+	        // 不静音
 	        if (this._opt.isNotMute) {
 	          this.mute(false);
 	        }
 
-	        if (this.webcodecsDecoder) {
-	          this.webcodecsDecoder.once(EVENTS_ERROR.webcodecsH265NotSupport, () => {
-	            this.emit(EVENTS_ERROR.webcodecsH265NotSupport);
-	            this.emit(EVENTS.error, EVENTS_ERROR.webcodecsH265NotSupport);
-	          });
-	        }
-
-	        if (this.mseDecoder) {
-	          this.mseDecoder.once(EVENTS_ERROR.mediaSourceH265NotSupport, () => {
-	            this.emit(EVENTS_ERROR.mediaSourceH265NotSupport);
-	            this.emit(EVENTS.error, EVENTS_ERROR.mediaSourceH265NotSupport);
-	          });
-	        }
-
-	        this.enableWakeLock();
-	        this.stream.fetchStream(url); //
-
-	        this.checkLoadingTimeout(); // fetch error
-
-	        this.stream.once(EVENTS_ERROR.fetchError, error => {
-	          reject(error);
-	        }); // ws
-
-	        this.stream.once(EVENTS_ERROR.websocketError, error => {
-	          reject(error);
-	        }); // success
-
-	        this.stream.once(EVENTS.streamSuccess, () => {
-	          resolve(); //
-
-	          if (this._opt.useMSE) {
-	            this.video.play();
+	        WebRTCVideo(this);
+	      } else {
+	        this.init().then(() => {
+	          //
+	          if (this._opt.isNotMute) {
+	            this.mute(false);
 	          }
+
+	          if (this.webcodecsDecoder) {
+	            this.webcodecsDecoder.once(EVENTS_ERROR.webcodecsH265NotSupport, () => {
+	              this.emit(EVENTS_ERROR.webcodecsH265NotSupport);
+	              this.emit(EVENTS.error, EVENTS_ERROR.webcodecsH265NotSupport);
+	            });
+	          }
+
+	          if (this.mseDecoder) {
+	            this.mseDecoder.once(EVENTS_ERROR.mediaSourceH265NotSupport, () => {
+	              this.emit(EVENTS_ERROR.mediaSourceH265NotSupport);
+	              this.emit(EVENTS.error, EVENTS_ERROR.mediaSourceH265NotSupport);
+	            });
+	          }
+
+	          this.enableWakeLock();
+	          this.stream.fetchStream(url); //
+
+	          this.checkLoadingTimeout(); // fetch error
+
+	          this.stream.once(EVENTS_ERROR.fetchError, error => {
+	            reject(error);
+	          }); // ws
+
+	          this.stream.once(EVENTS_ERROR.websocketError, error => {
+	            reject(error);
+	          }); // success
+
+	          this.stream.once(EVENTS.streamSuccess, () => {
+	            resolve(); //
+
+	            if (this._opt.useMSE) {
+	              this.video.play();
+	            }
+	          });
+	        }).catch(e => {
+	          reject(e);
 	        });
-	      }).catch(e => {
-	        reject(e);
-	      });
+	      }
 	    });
 	  }
 	  /**

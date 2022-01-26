@@ -17,6 +17,7 @@ import './style.scss'
 import observer from "./observer";
 import MseDecoder from "../decoder/mediaSource";
 import NoSleep from "../utils/noSleep";
+import useWebRTC from './useWebRTC'
 
 export default class Player extends Emitter {
     constructor(container, options) {
@@ -320,56 +321,69 @@ export default class Player extends Emitter {
 
             this.clearCheckHeartTimeout();
 
-            this.init().then(() => {
-                //
+            console.log('useWebRTC', this)
+
+            // 使用WebRTC
+            if (this._opt.useWebRTC) {
+                // 不静音
                 if (this._opt.isNotMute) {
                     this.mute(false);
                 }
 
+                useWebRTC(this);
+            } else {
 
-                if (this.webcodecsDecoder) {
-                    this.webcodecsDecoder.once(EVENTS_ERROR.webcodecsH265NotSupport, () => {
-                        this.emit(EVENTS_ERROR.webcodecsH265NotSupport)
-                        this.emit(EVENTS.error, EVENTS_ERROR.webcodecsH265NotSupport);
-                    })
-                }
-
-                if (this.mseDecoder) {
-                    this.mseDecoder.once(EVENTS_ERROR.mediaSourceH265NotSupport, () => {
-                        this.emit(EVENTS_ERROR.mediaSourceH265NotSupport)
-                        this.emit(EVENTS.error, EVENTS_ERROR.mediaSourceH265NotSupport);
-                    })
-                }
-
-
-                this.enableWakeLock();
-
-                this.stream.fetchStream(url);
-
-                //
-                this.checkLoadingTimeout();
-                // fetch error
-                this.stream.once(EVENTS_ERROR.fetchError, (error) => {
-                    reject(error)
-                })
-
-                // ws
-                this.stream.once(EVENTS_ERROR.websocketError, (error) => {
-                    reject(error)
-                })
-
-                // success
-                this.stream.once(EVENTS.streamSuccess, () => {
-                    resolve();
+                this.init().then(() => {
                     //
-                    if (this._opt.useMSE) {
-                        this.video.play();
+                    if (this._opt.isNotMute) {
+                        this.mute(false);
                     }
-                })
 
-            }).catch((e) => {
-                reject(e)
-            })
+
+                    if (this.webcodecsDecoder) {
+                        this.webcodecsDecoder.once(EVENTS_ERROR.webcodecsH265NotSupport, () => {
+                            this.emit(EVENTS_ERROR.webcodecsH265NotSupport)
+                            this.emit(EVENTS.error, EVENTS_ERROR.webcodecsH265NotSupport);
+                        })
+                    }
+
+                    if (this.mseDecoder) {
+                        this.mseDecoder.once(EVENTS_ERROR.mediaSourceH265NotSupport, () => {
+                            this.emit(EVENTS_ERROR.mediaSourceH265NotSupport)
+                            this.emit(EVENTS.error, EVENTS_ERROR.mediaSourceH265NotSupport);
+                        })
+                    }
+
+                    this.enableWakeLock();
+
+                    this.stream.fetchStream(url);
+
+                    //
+                    this.checkLoadingTimeout();
+                    // fetch error
+                    this.stream.once(EVENTS_ERROR.fetchError, (error) => {
+                        reject(error)
+                    })
+
+                    // ws
+                    this.stream.once(EVENTS_ERROR.websocketError, (error) => {
+                        reject(error)
+                    })
+
+                    // success
+                    this.stream.once(EVENTS.streamSuccess, () => {
+                        resolve();
+                        //
+                        if (this._opt.useMSE) {
+                            this.video.play();
+                        }
+                    })
+
+                }).catch((e) => {
+                    reject(e)
+                })
+            }
+
         })
     }
 

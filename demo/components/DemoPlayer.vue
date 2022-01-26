@@ -164,6 +164,7 @@ export default {
                         loadingText: "疯狂加载中...",
                         // hasAudio:false,
                         debug: false,
+                        useWebRTC: true,
                         supportDblclickFullscreen: true,
                         showBandwidth: this.showBandwidth, // 显示网速
                         operateBtns: {
