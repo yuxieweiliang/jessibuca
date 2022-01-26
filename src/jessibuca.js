@@ -57,13 +57,13 @@ class Jessibuca extends Emitter {
     }
 
     _initAegis() {
-        const aegis = new Aegis({
+        /*const aegis = new Aegis({
             id: '3ogWGfLmpllRGka9pY', // 上报 id
             // uin: uuid16(), // 用户唯一 ID（可选）
             reportApiSpeed: false, // 接口测速
             reportAssetSpeed: false, // 静态资源测速
             spa: false // spa 应用页面跳转的时候开启 pv 计算
-        });
+        });*/
     }
 
     _bindEvents() {

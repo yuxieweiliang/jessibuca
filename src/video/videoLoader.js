@@ -13,6 +13,7 @@ export default class VideoLoader extends CommonLoader {
         $videoElement.style.top = 0;
         $videoElement.style.left = 0;
         player.$container.appendChild($videoElement);
+        player.$container.$videoElement = $videoElement;
         this.$videoElement = $videoElement;
         this.videoInfo = {
             width: '',
@@ -76,7 +77,7 @@ export default class VideoLoader extends CommonLoader {
         const context = canvas.getContext('2d');
         context.drawImage($video, 0, 0, canvas.width, canvas.height);
         const dataURL = canvas.toDataURL(SCREENSHOT_TYPE[format] || SCREENSHOT_TYPE.png, encoderOptions);
-        const file = dataURLToFile(dataURL)
+        const file = dataURLToFile(dataURL);
         if (type === SCREENSHOT_TYPE.base64) {
             return dataURL;
         } else if (type === SCREENSHOT_TYPE.blob) {
@@ -110,7 +111,13 @@ export default class VideoLoader extends CommonLoader {
             objectFill = 'none';
         }
         this.$videoElement.style.objectFit = objectFill;
-        this.$videoElement.style.transform = 'rotate(' + rotate + 'deg)';
+        const transform = this.$videoElement.style.transform;
+        if (transform) {
+            this.$videoElement.style.transform = transform;
+        } else {
+            this.$videoElement.style.transform = 'rotate(' + rotate + 'deg)';
+        }
+
     }
 
 

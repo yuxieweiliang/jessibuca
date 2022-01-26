@@ -137,14 +137,14 @@ export default {
         };
     },
     mounted() {
-        this.vConsole = new window.VConsole();
+        // this.vConsole = new window.VConsole();
         this.version = VERSION === '#VERSION#' ? '' : VERSION;
         this.create();
         window.onerror = (msg) => (this.err = msg);
     },
     unmounted() {
         this.jessibuca.destroy();
-        this.vConsole.destroy();
+        // this.vConsole.destroy();
     },
     methods: {
         create(options) {

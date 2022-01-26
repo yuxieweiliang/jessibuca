@@ -94,14 +94,13 @@
 import '../public/jessibuca.js';
 import { VERSION } from "./version";
 
-console.log(jessibuca);
-
 export default {
     name: "DemoPlayer",
     props: {},
     data() {
-        const array32 = new Array(64);
-        const url = 'ws://8.142.19.151:6010/jessica/1466683953296576512';
+        const array32 = new Array(2);
+        let url = 'ws://8.142.19.151:6010/jessica/1466683953296576512';
+        url = 'ws://8.142.19.151:6010/jessica/live/rtsp2';
         var videoArray = array32.fill(null).map((_, index) => ({
             url,
             index,
@@ -145,11 +144,11 @@ export default {
             options = options || {};
 
             this.videoArray.forEach(item => {
-                console.log(this.$refs['container' + item.index][0]);
+                console.log(this.$refs['container' + item.index]);
                 item.jessibuca = new window.Jessibuca(
                     Object.assign(
                         {
-                            container: this.$refs['container' + item.index][0],
+                            container: this.$refs['container' + item.index],
                             videoBuffer: Number(this.$refs.buffer.value), // 缓存时长
                             isResize: false,
                             useWCS: this.useWCS,
@@ -157,7 +156,7 @@ export default {
                             text: "",
                             // background: "bg.jpg",
                             loadingText: "疯狂加载中...",
-                            // hasAudio:false,
+                            hasAudio: false,
                             debug: false,
                             supportDblclickFullscreen: true,
                             showBandwidth: this.showBandwidth, // 显示网速

@@ -9,12 +9,12 @@ const iconsMap = {
     fullscreenExit: '退出全屏',
     record: '录制',
     recordStop: '停止录制',
-    movement: '云台控制',
-    movementEnable: '云台控制', // 启用
-    transform3D: '3D变换',
-    transform3DEnable: '3D变换', // 启用
-    zoomIn: '放大',
-    zoomOut: '缩小',
+    // movement: '云台控制',
+    // movementEnable: '云台控制', // 启用
+    // transform3D: '3D变换',
+    // transform3DEnable: '3D变换', // 启用
+    // zoomIn: '放大',
+    // zoomOut: '缩小',
 };
 
 export default Object.keys(iconsMap).reduce((icons, key) => {

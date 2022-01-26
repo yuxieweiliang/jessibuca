@@ -72,13 +72,13 @@
 	    play: false,
 	    audio: false,
 	    // 录制屏幕
-	    record: false,
-	    // 云台控制
-	    movement: false,
+	    record: false // 云台控制
+	    // movement: false,
 	    // 变换 3D
-	    transform: false,
+	    // transform: false,
 	    // 放大缩小
-	    zoom: false
+	    // zoom: false,
+
 	  },
 	  hasControl: false,
 	  loadingText: '',
@@ -1211,6 +1211,7 @@
 	    $videoElement.style.top = 0;
 	    $videoElement.style.left = 0;
 	    player.$container.appendChild($videoElement);
+	    player.$container.$videoElement = $videoElement;
 	    this.$videoElement = $videoElement;
 	    this.videoInfo = {
 	      width: '',
@@ -1305,7 +1306,13 @@
 	    }
 
 	    this.$videoElement.style.objectFit = objectFill;
-	    this.$videoElement.style.transform = 'rotate(' + rotate + 'deg)';
+	    const transform = this.$videoElement.style.transform;
+
+	    if (transform) {
+	      this.$videoElement.style.transform = transform;
+	    } else {
+	      this.$videoElement.style.transform = 'rotate(' + rotate + 'deg)';
+	    }
 	  }
 
 	  destroy() {
@@ -8706,15 +8713,13 @@
 	  fullscreen: '全屏',
 	  fullscreenExit: '退出全屏',
 	  record: '录制',
-	  recordStop: '停止录制',
-	  movement: '云台控制',
-	  movementEnable: '云台控制',
-	  // 启用
-	  transform3D: '3D变换',
-	  transform3DEnable: '3D变换',
-	  // 启用
-	  zoomIn: '放大',
-	  zoomOut: '缩小'
+	  recordStop: '停止录制' // movement: '云台控制',
+	  // movementEnable: '云台控制', // 启用
+	  // transform3D: '3D变换',
+	  // transform3DEnable: '3D变换', // 启用
+	  // zoomIn: '放大',
+	  // zoomOut: '缩小',
+
 	};
 	var icons = Object.keys(iconsMap).reduce((icons, key) => {
 	  icons[key] = `<i class="jessibuca-icon jessibuca-icon-${key}"></i>`;
@@ -11300,7 +11305,7 @@
 
 	}
 
-	var aegis_min = createCommonjsModule(function (module, exports) {
+	createCommonjsModule(function (module, exports) {
 	  /**
 	   *  =====================================================================
 	   * @tencent/aegis-web-sdk@1.24.48 (c) 2021 Tencent Application Monitor.
@@ -13359,17 +13364,13 @@
 	  }
 
 	  _initAegis() {
-	    new aegis_min({
-	      id: '3ogWGfLmpllRGka9pY',
-	      // 上报 id
-	      // uin: uuid16(), // 用户唯一 ID（可选）
-	      reportApiSpeed: false,
-	      // 接口测速
-	      reportAssetSpeed: false,
-	      // 静态资源测速
-	      spa: false // spa 应用页面跳转的时候开启 pv 计算
-
-	    });
+	    /*const aegis = new Aegis({
+	        id: '3ogWGfLmpllRGka9pY', // 上报 id
+	        // uin: uuid16(), // 用户唯一 ID（可选）
+	        reportApiSpeed: false, // 接口测速
+	        reportAssetSpeed: false, // 静态资源测速
+	        spa: false // spa 应用页面跳转的时候开启 pv 计算
+	    });*/
 	  }
 
 	  _bindEvents() {

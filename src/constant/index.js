@@ -34,11 +34,11 @@ export const DEFAULT_PLAYER_OPTIONS = {
         // 录制屏幕
         record: false,
         // 云台控制
-        movement: false,
+        // movement: false,
         // 变换 3D
-        transform: false,
+        // transform: false,
         // 放大缩小
-        zoom: false,
+        // zoom: false,
     },
     hasControl: false,
     loadingText: '',
