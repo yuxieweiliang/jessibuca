@@ -1,7 +1,29 @@
+function assembleUrl (path) {
+    const url = new URL(path)
+    if (url.origin && url.origin !== 'null') {
+        return `${window.location.origin}/api/webrtc/play?streamPath=${url.pathname.substr(1)}`
+    } else {
+        let pathname = url.pathname
+        let streamPath = ''
+        let index = 0
+        if (url.pathname.startsWith('//')) {
+            pathname = url.pathname.substr(2)
+        }
+
+        index = pathname.indexOf('/')
+        streamPath = pathname.substring(index + 1)
+
+        if (pathname) {
+            return `${window.location.origin}/webrtc_api/webrtc/play?streamPath=${streamPath}`
+        } else {
+            console.log('url is Error for webRTC！')
+        }
+    }
+}
 
 async function WebRTCVideo(player) {
     let pc = new RTCPeerConnection();
-    const streamPath = player._opt.url
+    const streamPath =  assembleUrl(player._opt.url)
     const $video = player.$container.$videoElement
     const pcConfig = {
         iceConnectionState: pc && pc.iceConnectionState,
