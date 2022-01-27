@@ -1,7 +1,7 @@
 function assembleUrl (path) {
     const url = new URL(path)
     if (url.origin && url.origin !== 'null') {
-        return `${window.location.origin}/api/webrtc/play?streamPath=${url.pathname.substr(1)}`
+        return `${window.location.origin}/webrtc-api/webrtc/play?streamPath=${url.pathname.substr(1)}`
     } else {
         let pathname = url.pathname
         let streamPath = ''
@@ -14,7 +14,7 @@ function assembleUrl (path) {
         streamPath = pathname.substring(index + 1)
 
         if (pathname) {
-            return `${window.location.origin}/webrtc_api/webrtc/play?streamPath=${streamPath}`
+            return `${window.location.origin}/webrtc-api/webrtc/play?streamPath=${streamPath}`
         } else {
             console.log('url is Error for webRTC！')
         }
@@ -25,6 +25,7 @@ async function WebRTCVideo(player) {
     let pc = new RTCPeerConnection();
     const streamPath =  assembleUrl(player._opt.url)
     const $video = player.$container.$videoElement
+    const {proxy} = player.events;
     const pcConfig = {
         iceConnectionState: pc && pc.iceConnectionState,
         stream: null,
@@ -34,6 +35,11 @@ async function WebRTCVideo(player) {
         localSDPURL: "",
         streamPath: ""
     }
+
+
+    proxy($video, 'canplay', () => {
+        player.debug.log('Video', 'canplay');
+    })
 
     pc.addTransceiver('video',{
         direction: 'recvonly'
@@ -59,6 +65,10 @@ async function WebRTCVideo(player) {
             pcConfig.stream = event.streams[0];
             $video.srcObject = pcConfig.stream
             $video.play()
+
+            if (!player.playing) {
+                player.playing = true;
+            }
         }
     };
 
