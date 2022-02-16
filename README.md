@@ -81,3 +81,63 @@ Jessibuca是一款开源的纯H5直播流播放器，通过Emscripten将音视�
 
 ## 支持
 <img src="/demo/public/wx.jpg"><img src="/demo/public/alipay.jpg">
+
+
+
+
+chrome 使用 devtool 查看JS内存使用情况
+https://www.cnblogs.com/liuzhaoting/articles/13182118.html
+https://www.cxyzjd.com/article/c11073138/84700482
+https://segmentfault.com/a/1190000039886452
+
+webrtc 数据统计：
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+##chrome:
+
+#### 工具url列表： chrome://chrome-urls/
+#### 版本信息： chrome://version/
+
+#### 性能分析神器： chrome://tracing/
+`https://2010-2021.limboy.me/2020/03/21/chrome-trace-viewer/`
+
+
+icon:
+https://www.iconfont.cn/collections/detail?spm=a313x.7781069.1998910419.d9df05512&cid=38718
+
+https://www.iconfont.cn/collections/detail?spm=a313x.7781069.1998910419.d9df05512&cid=38614
+
+https://www.iconfont.cn/collections/detail?spm=a313x.7781069.1998910419.d9df05512&cid=37720
+
+https://www.iconfont.cn/collections/detail?spm=a313x.7781069.1998910419.d9df05512&cid=37324
+
+https://www.iconfont.cn/collections/detail?spm=a313x.7781069.1998910419.d9df05512&cid=37266
+
+https://www.iconfont.cn/collections/detail?spm=a313x.7781069.1998910419.d9df05512&cid=35745
+
+正在使用:
+https://www.iconfont.cn/collections/detail?spm=a313x.7781069.1998910419.d9df05512&cid=35729
+
+
+

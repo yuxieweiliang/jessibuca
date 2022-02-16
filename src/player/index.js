@@ -94,9 +94,7 @@ export default class Player extends Emitter {
         this.audio = new Audio(this);
         this.recorder = new Recorder(this);
 
-        if (!this._opt.useWebRTC) {
-            this.decoderWorker = new DecoderWorker(this);
-        }
+        this.decoderWorker = new DecoderWorker(this);
 
         this.stream = null;
         this.demux = null;
@@ -299,10 +297,8 @@ export default class Player extends Emitter {
             } else {
                 resolve()
             }
-
         })
     }
-
 
     /**
      *

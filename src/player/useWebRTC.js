@@ -1,5 +1,6 @@
 import webRTCErrorHandle from './webRTCErrorHandle'
 import { webRtcRecvOnly } from './webRTCUtls'
+import {EVENTS} from "../constant";
 
 function assembleUrl (path) {
     const url = new URL(path)
@@ -68,7 +69,7 @@ async function WebRTCVideo(player) {
         //console.log(e);
     };
 
-    webRtc.pc.oniceconnectionstatechange = e => {
+    webRtc.pc.oniceconnectionstatechange = function () {
         pcConfig.iceConnectionState = webRtc.pc.iceConnectionState;
     };
 
@@ -77,8 +78,7 @@ async function WebRTCVideo(player) {
     };
 
     webRtc.pc.ontrack = event => {
-        console.log('event: => ', event);
-        if (event.track.kind == "video") {
+        if (event.track.kind === "video") {
             pcConfig.stream = event.streams[0];
             $video.srcObject = pcConfig.stream
             $video.play()
@@ -115,13 +115,9 @@ async function WebRTCVideo(player) {
     }
 
     webRtc.generateOffer((sdp) => {
-        console.log(sdp)
         fetchRemoteDescription()
         pcConfig.localSDP = webRtc.pc.localDescription.sdp;
     })
-
-
-
 
 }
 

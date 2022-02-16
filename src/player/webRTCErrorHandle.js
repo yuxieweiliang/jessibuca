@@ -12,10 +12,11 @@ export default function webRTCErrorHandle (peerConnection, callbacks = {}, noop 
      * }
      * @param error
      */
-    peerConnection.onicecandidateerror = function (error) {
+    peerConnection.addEventListener('icecandidateerror', async function () {
         iceCandidateError(error);
         console.error(`iceError: => { \n  errorText: ${error.errorText}, \n  errorCode: ${error.errorCode} \n}`);
-    };
+    });
+
     /**
      * 1. new:
      *    至少在连接的一ICE传输（RTCIceTransport或RTCDtlsTransport对象）是在new状态，
@@ -39,14 +40,15 @@ export default function webRTCErrorHandle (peerConnection, callbacks = {}, noop 
      * 6. closed:
      *    将RTCPeerConnection被关闭。
      */
-    peerConnection.onconnectionstatechange = function () {
+    peerConnection.addEventListener('connectionstatechange', async function () {
         const connectionState = this.connectionState;
         console.debug('connection: => ' + JSON.stringify(connectionState, null, 2));
         if (connectionState === 'failed') {
             connectionStateFailed();
             this.restartIce();
         }
-    };
+    });
+
     /**
      * 获取远端 Ice 状态
      * 1. new:
@@ -98,7 +100,7 @@ export default function webRTCErrorHandle (peerConnection, callbacks = {}, noop 
      *    ICE 特工已经完成了候选人的收集。
      *    如果发生需要收集新候选者的事情，例如添加新接口或添加新 ICE 服务器，则状态将恢复gathering为收集这些候选者。
      */
-    peerConnection.onicegatheringstatechange = function () {
+    peerConnection.addEventListener('icegatheringstatechange', async function () {
         const iceGatheringState = this.iceGatheringState;
         let label = "Unknown";
         switch(iceGatheringState) {
@@ -111,7 +113,7 @@ export default function webRTCErrorHandle (peerConnection, callbacks = {}, noop 
                 break;
         }
         console.debug('iceGathering: => ' + label);
-    };
+    });
 
     /**
      * 1. stable:
@@ -142,9 +144,9 @@ export default function webRTCErrorHandle (peerConnection, callbacks = {}, noop 
      * 6. closed:
      *    在RTCPeerConnection已被关闭。
      */
-    peerConnection.onsignalingstatechange = function () {
+    peerConnection.addEventListener('signalingstatechange', async function () {
         const signalingState = this.signalingState;
         console.debug('signaling: => ' + JSON.stringify(signalingState, null, 2));
-    };
+    });
 
 }

@@ -1,7 +1,5 @@
-let webRtc;
-
-export function WebRtcPeerRecvOnly(option, callback) {
-    this.pc = new RTCPeerConnection();
+export function WebRtcPeerRecvOnly(option) {
+    this.pc = new RTCPeerConnection(option);
 }
 
 WebRtcPeerRecvOnly.prototype.generateOffer = async function generateOffer (option, callback) {
@@ -22,6 +20,7 @@ WebRtcPeerRecvOnly.prototype.processAnswer = async function processAnswer (sdp, 
     if (typeof sdp === 'string') {
         sdp = { sdp }
     }
+
     if (!sdp.sdp) {
         throw new Error('sdp 不能为空！')
     }
@@ -35,12 +34,15 @@ WebRtcPeerRecvOnly.prototype.processAnswer = async function processAnswer (sdp, 
     return true
 }
 
-export function webRtcRecvOnly(option) {
-    if (!webRtc) {
-        webRtc = new WebRtcPeerRecvOnly(option)
-        webRtc.pc.addTransceiver('video',{
-            direction: 'recvonly'
-        });
+export function webRtcRecvOnly(option, callback) {
+    const webRtc = new WebRtcPeerRecvOnly(option)
+
+    webRtc.pc.addTransceiver('video',{
+        direction: 'recvonly'
+    });
+
+    if (callback) {
+        callback(webRtc)
     }
 
     return webRtc

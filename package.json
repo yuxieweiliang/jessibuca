@@ -2,7 +2,7 @@
     "name": "sullivan-core-v3",
     "version": "1.0.0",
     "browser": "demo/public/jessibuca.js",
-    "main": "demo/public/jessibuca.js",
+    "main": "dist/jessibuca.js",
     "directories": {
         "lib": "lib"
     },

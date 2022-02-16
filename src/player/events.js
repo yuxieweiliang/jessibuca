@@ -3,8 +3,6 @@ import screenfull from "screenfull";
 import {setStyle} from "../utils";
 
 export default (player) => {
-
-
     try {
         const screenfullChange = () => {
             player.emit(JESSIBUCA_EVENTS.fullscreen, player.fullscreen)

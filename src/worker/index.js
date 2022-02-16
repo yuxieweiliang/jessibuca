@@ -1,11 +1,24 @@
 import {EVENTS, MEDIA_TYPE, WORKER_CMD_TYPE, WORKER_SEND_TYPE} from "../constant";
+import WebcodecsDecoder from "../decoder/webcodecs";
+import MseDecoder from "../decoder/mediaSource";
 
 export default class DecoderWorker {
     constructor(player) {
         this.player = player;
-        this.decoderWorker = new Worker(player._opt.decoder)
-        this._initDecoderWorker();
-        player.debug.log('decoderWorker', 'init')
+        if (player._opt.useWebRTC) {
+            setTimeout(this.__initWebRTCStatus.bind(this), 200)
+        } else {
+            this.decoderWorker = new Worker(player._opt.decoder)
+            this._initDecoderWorker();
+            player.debug.log('decoderWorker', 'init')
+        }
+    }
+
+    __initWebRTCStatus () {
+        if (!this.player.loaded) {
+            this.player.emit(EVENTS.load);
+        }
+        this.player.emit(EVENTS.decoderWorkerInit);
     }
 
     _initDecoderWorker() {
@@ -16,6 +29,7 @@ export default class DecoderWorker {
 
         this.decoderWorker.onmessage = (event) => {
             const msg = event.data;
+            console.log('--------------------------', event)
             switch (msg.cmd) {
                 case WORKER_CMD_TYPE.init:
                     debug.log(`decoderWorker`, 'onmessage:', WORKER_CMD_TYPE.init);
@@ -127,9 +141,11 @@ export default class DecoderWorker {
     }
 
     destroy() {
-        this.decoderWorker.postMessage({cmd: WORKER_SEND_TYPE.close})
-        this.decoderWorker.terminate();
-        this.decoderWorker = null;
+        if (this.decoderWorker) {
+            this.decoderWorker.postMessage({cmd: WORKER_SEND_TYPE.close})
+            this.decoderWorker.terminate();
+            this.decoderWorker = null;
+        }
         this.player.debug.log(`decoderWorker`, 'destroy');
     }
 }
