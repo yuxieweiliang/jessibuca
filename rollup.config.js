@@ -55,7 +55,8 @@ const baseConfig = {
             targets: [
                 {
                     src: "src/decoder/decoder.wasm",
-                    dest: isProd ? 'dist/decoder.wasm' : 'demo/public/decoder.wasm'
+                    dest: isProd ? 'dist/decoder.wasm' : 'demo/public/decoder.wasm',
+                    // dest: 'dist/decoder.wasm',
                 }
             ]
         })

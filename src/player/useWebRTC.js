@@ -1,3 +1,6 @@
+import webRTCErrorHandle from './webRTCErrorHandle'
+import { webRtcRecvOnly } from './webRTCUtls'
+
 function assembleUrl (path) {
     const url = new URL(path)
     if (url.origin && url.origin !== 'null') {
@@ -22,12 +25,12 @@ function assembleUrl (path) {
 }
 
 async function WebRTCVideo(player) {
-    let pc = new RTCPeerConnection();
+    let webRtc = webRtcRecvOnly();
     const streamPath =  assembleUrl(player._opt.url)
     const $video = player.$container.$videoElement
     const {proxy} = player.events;
     const pcConfig = {
-        iceConnectionState: pc && pc.iceConnectionState,
+        iceConnectionState: webRtc.pc.iceConnectionState,
         stream: null,
         localSDP: "",
         remoteSDP: "",
@@ -36,30 +39,44 @@ async function WebRTCVideo(player) {
         streamPath: ""
     }
 
+    console.log('-----useWebRTC----', webRtc)
+
+    /**
+     * WebRTC错误处理 重连
+     */
+    webRTCErrorHandle(webRtc.pc, {
+        iceConnectionStateFailed: () => {
+            webRtcPeer.generateOffer((error, offerSdp) => {
+                if (error) {
+                    return console.error('Error generating the offer');
+                }
+                offerToReceiveVideo({
+                    ...offerMsg,
+                    offerSdp,
+                })
+            });
+        },
+    })
 
     proxy($video, 'canplay', () => {
         player.debug.log('Video', 'canplay');
     })
 
-    pc.addTransceiver('video',{
-        direction: 'recvonly'
-    });
-
     pcConfig.streamPath = streamPath;
 
-    pc.onsignalingstatechange = e => {
+    webRtc.pc.onsignalingstatechange = e => {
         //console.log(e);
     };
 
-    pc.oniceconnectionstatechange = e => {
-        pcConfig.iceConnectionState = pc.iceConnectionState;
+    webRtc.pc.oniceconnectionstatechange = e => {
+        pcConfig.iceConnectionState = webRtc.pc.iceConnectionState;
     };
 
-    pc.onicecandidate = event => {
+    webRtc.pc.onicecandidate = event => {
         // console.log(event)
     };
 
-    pc.ontrack = event => {
+    webRtc.pc.ontrack = event => {
         console.log('event: => ', event);
         if (event.track.kind == "video") {
             pcConfig.stream = event.streams[0];
@@ -72,31 +89,39 @@ async function WebRTCVideo(player) {
         }
     };
 
-    await pc.setLocalDescription(await pc.createOffer());
+    async function fetchRemoteDescription () {
+        pcConfig.localSDPURL = URL.createObjectURL(
+            new Blob([pcConfig.localSDP], { type: "text/plain" })
+        );
 
-    pcConfig.localSDP = pc.localDescription.sdp;
+        console.log(pcConfig.streamPath)
+        const result = await fetch(pcConfig.streamPath, {
+            method: "POST",
+            body: JSON.stringify(webRtc.pc.localDescription.toJSON()),
+            headers: {
+                'Content-Type': 'application/json;charset=UTF-8'
+            }
+        }).then(res => res.json());
 
-    pcConfig.localSDPURL = URL.createObjectURL(
-        new Blob([pcConfig.localSDP], { type: "text/plain" })
-    );
-
-    const result = await fetch(pcConfig.streamPath, {
-        method: "POST",
-        body: JSON.stringify(pc.localDescription.toJSON()),
-        headers: {
-            'Content-Type': 'application/json;charset=UTF-8'
+        if (result.errmsg) {
+            console.error(result.errmsg);
+            return;
+        } else {
+            pcConfig.remoteSDP = result.sdp;
+            pcConfig.remoteSDPURL = URL.createObjectURL(new Blob([pcConfig.remoteSDP], { type: "text/plain" }));
         }
-    }).then(res => res.json());
 
-    if (result.errmsg) {
-        console.error(result.errmsg);
-        return;
-    } else {
-        pcConfig.remoteSDP = result.sdp;
-        pcConfig.remoteSDPURL = URL.createObjectURL(new Blob([pcConfig.remoteSDP], { type: "text/plain" }));
+        await webRtc.pc.setRemoteDescription(new RTCSessionDescription(result));
     }
 
-    await pc.setRemoteDescription(new RTCSessionDescription(result));
+    webRtc.generateOffer((sdp) => {
+        console.log(sdp)
+        fetchRemoteDescription()
+        pcConfig.localSDP = webRtc.pc.localDescription.sdp;
+    })
+
+
+
 
 }
 

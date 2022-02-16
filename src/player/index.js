@@ -26,7 +26,7 @@ export default class Player extends Emitter {
         this._opt = Object.assign({}, DEFAULT_PLAYER_OPTIONS, options)
         this.debug = new Debug(this);
 
-
+        console.log('-------------------------', this._opt);
         if (this._opt.useWCS) {
             this._opt.useWCS = supportWCS();
         }
@@ -93,19 +93,22 @@ export default class Player extends Emitter {
         this.video = new Video(this);
         this.audio = new Audio(this);
         this.recorder = new Recorder(this);
-        this.decoderWorker = new DecoderWorker(this);
 
+        if (!this._opt.useWebRTC) {
+            this.decoderWorker = new DecoderWorker(this);
+        }
 
         this.stream = null;
         this.demux = null;
 
+        if (!this._opt.useWebRTC) {
+            if (this._opt.useWCS) {
+                this.webcodecsDecoder = new WebcodecsDecoder(this)
+            }
 
-        if (this._opt.useWCS) {
-            this.webcodecsDecoder = new WebcodecsDecoder(this)
-        }
-
-        if (this._opt.useMSE) {
-            this.mseDecoder = new MseDecoder(this);
+            if (this._opt.useMSE) {
+                this.mseDecoder = new MseDecoder(this);
+            }
         }
 
         //
