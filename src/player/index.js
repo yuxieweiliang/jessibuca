@@ -26,7 +26,6 @@ export default class Player extends Emitter {
         this._opt = Object.assign({}, DEFAULT_PLAYER_OPTIONS, options)
         this.debug = new Debug(this);
 
-        console.log('-------------------------', this._opt);
         if (this._opt.useWCS) {
             this._opt.useWCS = supportWCS();
         }
@@ -320,7 +319,7 @@ export default class Player extends Emitter {
 
             this.clearCheckHeartTimeout();
 
-            console.log('useWebRTC', this)
+            // console.log('useWebRTC', this)
 
             // 使用WebRTC
             if (this._opt.useWebRTC) {

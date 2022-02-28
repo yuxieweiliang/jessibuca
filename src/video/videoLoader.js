@@ -136,16 +136,15 @@ export default class VideoLoader extends CommonLoader {
         toggleDisplay('$screenshot', 500)
 
         if (option.operateBtns.transform) {
-            console.log(control)
             if (control && control.movement) {
-                toggleDisplay('$movementActive', 500)
+                toggleDisplay('$movementActive', 600)
             } else {
-                toggleDisplay('$movement', 500)
+                toggleDisplay('$movement', 600)
             }
+            toggleDisplay('$movementWrap', 600)
         }
 
         if (option.operateBtns.transform) {
-            console.log(control)
             if (control && control.transform) {
                 toggleDisplay('$transformActive', 500)
             } else {
@@ -188,7 +187,10 @@ export default class VideoLoader extends CommonLoader {
             toggleDisplay('$record', 300)
         }
 
-        console.log('resize -------------- resize', this.player)
+        if (this.player && this.player.control) {
+            this.player.control.emit('resize', this.$videoElement);
+        }
+        // console.log('resize -------------- resize', this.player)
     }
 
     getNewVideo (player) {

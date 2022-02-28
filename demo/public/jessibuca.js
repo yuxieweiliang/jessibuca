@@ -1338,18 +1338,16 @@
 	    toggleDisplay('$screenshot', 500);
 
 	    if (option.operateBtns.transform) {
-	      console.log(control);
-
 	      if (control && control.movement) {
-	        toggleDisplay('$movementActive', 500);
+	        toggleDisplay('$movementActive', 600);
 	      } else {
-	        toggleDisplay('$movement', 500);
+	        toggleDisplay('$movement', 600);
 	      }
+
+	      toggleDisplay('$movementWrap', 600);
 	    }
 
 	    if (option.operateBtns.transform) {
-	      console.log(control);
-
 	      if (control && control.transform) {
 	        toggleDisplay('$transformActive', 500);
 	      } else {
@@ -1390,6 +1388,10 @@
 	      toggleDisplay('$recordStop', 300);
 	    } else {
 	      toggleDisplay('$record', 300);
+	    }
+
+	    if (this.player && this.player.control) {
+	      this.player.control.emit('resize', this.$videoElement);
 	    }
 
 	    console.log('resize -------------- resize', this.player);
@@ -11940,7 +11942,6 @@ M769.322667 708.992l182.741333 182.698667-60.373333 60.373333-182.698667-182.741
 	    this.$container = container;
 	    this._opt = Object.assign({}, DEFAULT_PLAYER_OPTIONS, options);
 	    this.debug = new Debug(this);
-	    console.log('-------------------------', this._opt);
 
 	    if (this._opt.useWCS) {
 	      this._opt.useWCS = supportWCS();
@@ -14640,7 +14641,6 @@ M769.322667 708.992l182.741333 182.698667-60.373333 60.373333-182.698667-182.741
 	      throw new Error('Jessibuca need container option');
 	    }
 
-	    console.log('load');
 	    $container.classList.add('jessibuca-container');
 	    delete _opt.container; // s -> ms
 

@@ -26,7 +26,6 @@ class Jessibuca extends Emitter {
             return;
         }
 
-        console.log('load')
         $container.classList.add('jessibuca-container');
 
         delete _opt.container;
@@ -187,7 +186,7 @@ class Jessibuca extends Emitter {
      * @returns {Promise<unknown>}
      */
     play(url) {
-        console.log('play')
+        // console.log('play')
         return new Promise((resolve, reject) => {
             if (!url && !this._opt.url) {
                 this.emit(EVENTS.error, EVENTS_ERROR.playError)
