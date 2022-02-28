@@ -3,14 +3,20 @@ import observer from './observer';
 import property from './property';
 import events from './events';
 import './style.scss'
+import Emitter from "../utils/emitter";
 
-export default class Control {
+export default class Control extends Emitter {
     constructor(player) {
+        super()
         this.player = player;
         template(player, this);
         observer(player, this);
         property(player, this);
         events(player, this);
+
+        this.movement = false;
+        this.transform = false;
+        this.zoom = 1;
         this.player.debug.log('Control', 'init');
     }
 

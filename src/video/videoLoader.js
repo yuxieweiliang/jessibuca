@@ -1,6 +1,6 @@
 import Emitter from "../utils/emitter";
 import {CONTROL_HEIGHT, EVENTS, SCREENSHOT_TYPE, VIDEO_ENC_TYPE} from "../constant";
-import {dataURLToFile, downloadImg, now} from "../utils";
+import {dataURLToFile, downloadImg, now, setStyle} from "../utils";
 import CommonLoader from "./commonLoader";
 
 export default class VideoLoader extends CommonLoader {
@@ -12,7 +12,10 @@ export default class VideoLoader extends CommonLoader {
         $videoElement.style.position = "absolute";
         $videoElement.style.top = 0;
         $videoElement.style.left = 0;
-        player.$container.appendChild($videoElement);
+        $videoElement.setAttribute('start-time', Date.now());
+        if (!player._opt.useWebRTC) {
+            player.$container.appendChild($videoElement);
+        }
         player.$container.$videoElement = $videoElement;
         this.$videoElement = $videoElement;
         this.videoInfo = {
@@ -92,7 +95,9 @@ export default class VideoLoader extends CommonLoader {
     }
 
     resize() {
-        this.$videoElement.width = this.player.width;
+        const control = this.player.control;
+        const playerWidth = this.player.width;
+        this.$videoElement.width = playerWidth;
         this.$videoElement.height = this.player._opt.hasControl ? this.player.height - CONTROL_HEIGHT : this.player.height;
         const option = this.player._opt;
         let objectFill = 'contain';
@@ -118,8 +123,109 @@ export default class VideoLoader extends CommonLoader {
             this.$videoElement.style.transform = 'rotate(' + rotate + 'deg)';
         }
 
+        function toggleDisplay(elementName, width, defDisplay = 'block') {
+            if (control && control[elementName]) {
+                setStyle(
+                    control[elementName],
+                    'display',
+                    (playerWidth < width) ? 'none' : defDisplay
+                )
+            }
+        }
+
+        toggleDisplay('$screenshot', 500)
+
+        if (option.operateBtns.transform) {
+            console.log(control)
+            if (control && control.movement) {
+                toggleDisplay('$movementActive', 500)
+            } else {
+                toggleDisplay('$movement', 500)
+            }
+        }
+
+        if (option.operateBtns.transform) {
+            console.log(control)
+            if (control && control.transform) {
+                toggleDisplay('$transformActive', 500)
+            } else {
+                toggleDisplay('$transform', 500)
+            }
+        }
+
+        if (option.operateBtns.zoom) {
+            if (control && control.zoom >= 2) {
+                toggleDisplay('$zoomEnlarge', 300)
+                toggleDisplay('$zoomMinimizeActive', 300)
+            } else if (control && control.zoom < 2 && control.zoom > 1) {
+                toggleDisplay('$zoomEnlargeActive', 300)
+                toggleDisplay('$zoomMinimizeActive', 300)
+            } else {
+                toggleDisplay('$zoomEnlargeActive', 300)
+                toggleDisplay('$zoomMinimize', 300)
+            }
+        }
+
+        if (option.operateBtns.play) {
+            if (this.player.playing) {
+                toggleDisplay('$pause', 300, 'flex')
+            } else {
+                toggleDisplay('$play', 300, 'flex')
+            }
+        }
+
+        if (option.operateBtns.audio) {
+            if (this.player.audio && this.player.audio.volume > 0) {
+                toggleDisplay('$volumeOn', 300, 'flex')
+            } else {
+                toggleDisplay('$volumeOff', 300, 'flex')
+            }
+        }
+
+        if (this.player.recorder && this.player.recording) {
+            toggleDisplay('$recordStop', 300)
+        } else {
+            toggleDisplay('$record', 300)
+        }
+
+        console.log('resize -------------- resize', this.player)
     }
 
+    getNewVideo (player) {
+        return new VideoLoader(player)
+    }
+
+    resetVideo (cb) {
+        if (this.player.$container && this.player.$container.$videoElement) {
+            let $video = this.player.$container.$videoElement
+
+            // console.log($video.seekable)
+            if ($video) {
+                // $video.seekable.start($video.seekable.length - 10);
+                this.destroy()
+                this.player.$container.$videoElement = null;
+                this.$videoElement = null;
+                this.videoInfo = null;
+                this.player.video = null;
+                this.player.video = new VideoLoader(this.player)
+            }
+        }
+    }
+
+    destroyVideo ($oldVideo) {
+        if (this.player.$container && $oldVideo) {
+
+            // console.log($video.seekable)
+            if ($oldVideo) {
+                // $video.seekable.start($video.seekable.length - 10);
+                this.player.$container.removeChild($oldVideo);
+                this.init = false;
+                this.off();
+                this.player.debug.log('Video', 'destroy');
+                $oldVideo = null;
+            }
+        }
+    }
 
     destroy() {
         this.player.$container.removeChild(this.$videoElement);

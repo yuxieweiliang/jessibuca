@@ -1,5 +1,6 @@
 import webRTCErrorHandle from './webRTCErrorHandle'
-import { webRtcRecvOnly } from './webRTCUtls'
+import { WebRtcPeerRecvOnly } from './webRTCUtls'
+import Video from "../video";
 import {EVENTS} from "../constant";
 
 function assembleUrl (path) {
@@ -25,100 +26,99 @@ function assembleUrl (path) {
     }
 }
 
+function getOldVideoKey () {
+    return parseInt('' + Math.random() * Math.pow(10, 6)) + '-' + Date.now()
+}
+
+const map = new WeakMap();
 async function WebRTCVideo(player) {
-    let webRtc = webRtcRecvOnly();
-    const streamPath =  assembleUrl(player._opt.url)
-    const $video = player.$container.$videoElement
-    const {proxy} = player.events;
-    const pcConfig = {
-        iceConnectionState: webRtc.pc.iceConnectionState,
-        stream: null,
-        localSDP: "",
-        remoteSDP: "",
-        remoteSDPURL: "",
-        localSDPURL: "",
-        streamPath: ""
-    }
+    const streamPath = assembleUrl(player._opt.url)
+    const timeRefresh = player._opt.timeRefresh
+    let $webRTCVideo = player.$container.$videoElement
+    let $oldVideo = $webRTCVideo
+    map.set($webRTCVideo, new WebRtcPeerRecvOnly())
+    let __timer = null
+    let __TimerWebRTC = null
 
-    console.log('-----useWebRTC----', webRtc)
-
-    /**
-     * WebRTC错误处理 重连
-     */
-    webRTCErrorHandle(webRtc.pc, {
-        iceConnectionStateFailed: () => {
-            webRtcPeer.generateOffer((error, offerSdp) => {
-                if (error) {
-                    return console.error('Error generating the offer');
-                }
-                offerToReceiveVideo({
-                    ...offerMsg,
-                    offerSdp,
-                })
-            });
-        },
-    })
-
-    proxy($video, 'canplay', () => {
-        player.debug.log('Video', 'canplay');
-    })
-
-    pcConfig.streamPath = streamPath;
-
-    webRtc.pc.onsignalingstatechange = e => {
-        //console.log(e);
-    };
-
-    webRtc.pc.oniceconnectionstatechange = function () {
-        pcConfig.iceConnectionState = webRtc.pc.iceConnectionState;
-    };
-
-    webRtc.pc.onicecandidate = event => {
-        // console.log(event)
-    };
-
-    webRtc.pc.ontrack = event => {
+    function ontrack (event, __webRTCVideo) {
+        clearTimeout(__timer)
         if (event.track.kind === "video") {
-            pcConfig.stream = event.streams[0];
-            $video.srcObject = pcConfig.stream
-            $video.play()
+            player.$container.appendChild(__webRTCVideo);
+            $webRTCVideo.srcObject = event.streams[0];
+            $webRTCVideo.play()
 
             if (!player.playing) {
                 player.playing = true;
             }
         }
-    };
-
-    async function fetchRemoteDescription () {
-        pcConfig.localSDPURL = URL.createObjectURL(
-            new Blob([pcConfig.localSDP], { type: "text/plain" })
-        );
-
-        console.log(pcConfig.streamPath)
-        const result = await fetch(pcConfig.streamPath, {
-            method: "POST",
-            body: JSON.stringify(webRtc.pc.localDescription.toJSON()),
-            headers: {
-                'Content-Type': 'application/json;charset=UTF-8'
-            }
-        }).then(res => res.json());
-
-        if (result.errmsg) {
-            console.error(result.errmsg);
-            return;
-        } else {
-            pcConfig.remoteSDP = result.sdp;
-            pcConfig.remoteSDPURL = URL.createObjectURL(new Blob([pcConfig.remoteSDP], { type: "text/plain" }));
-        }
-
-        await webRtc.pc.setRemoteDescription(new RTCSessionDescription(result));
     }
 
-    webRtc.generateOffer((sdp) => {
-        fetchRemoteDescription()
-        pcConfig.localSDP = webRtc.pc.localDescription.sdp;
-    })
+    function deleteWebRTC() {
+        clearTimeout(player.__deleteWebRTCTimer)
+        $oldVideo.srcObject = undefined;
+        $oldVideo.src = '';
+        $oldVideo.load();
+        // 把上一个卸载了。
+        player.video.destroyVideo($oldVideo)
+        if (map.has($oldVideo)) {
+            map.get($oldVideo).destroy()
+            map.delete($oldVideo)
+            $oldVideo = $webRTCVideo
+        }
+    }
 
+    function resetWebRTC () {
+        player.__deleteWebRTCTimer = setTimeout(deleteWebRTC, 1000)
+        // 创建新 video
+        player.video = new Video(player)
+        $webRTCVideo = player.video.$videoElement
+
+        map.set($webRTCVideo, map.get($webRTCVideo))
+        map.delete($webRTCVideo)
+        // player.video = __newVideo
+        map.set($webRTCVideo, new WebRtcPeerRecvOnly())
+
+        clearTimeout(__TimerWebRTC)
+
+        map.get($webRTCVideo).pc.ontrack = function(event) {
+            ontrack(event, $webRTCVideo)
+        }
+
+        // restartVideo(event.streams[0])
+        // $video = null;
+        fetchRemoteSDP (map.get($webRTCVideo))
+
+        __TimerWebRTC = setTimeout(resetWebRTC, timeRefresh)
+    }
+
+    __TimerWebRTC = setTimeout(resetWebRTC, timeRefresh)
+
+    function fetchRemoteSDP (webRTC) {
+        webRTC.generateOffer(async (sdp) => {
+            let result = await fetch(streamPath, {
+                method: "POST",
+                body: JSON.stringify(sdp),
+                headers: {
+                    'Content-Type': 'application/json;charset=UTF-8'
+                }
+            }).then(res => res.json());
+
+            if (result.errmsg) {
+                console.error(result.errmsg);
+                return;
+            }
+
+            await webRTC.pc.setRemoteDescription(new RTCSessionDescription(result));
+
+            result = null
+            webRTC = null
+        })
+    }
+
+    map.get($webRTCVideo).pc.ontrack = function(event) {
+        ontrack(event, $webRTCVideo)
+    }
+    fetchRemoteSDP (map.get($webRTCVideo))
 }
 
 export default WebRTCVideo;

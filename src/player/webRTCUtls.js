@@ -1,5 +1,23 @@
-export function WebRtcPeerRecvOnly(option) {
+function WebRtcPeer(option) {
     this.pc = new RTCPeerConnection(option);
+    this.time = {
+        // 开始时间
+        __start: Date.now(),
+        // 持续时间
+        __duration: null,
+        // 1小时
+        __interval: 1000 * 60 * 60,
+        // 上次清理的时间
+        __prevClear: null,
+    }
+}
+
+export function WebRtcPeerRecvOnly(option) {
+    WebRtcPeer.call(this, option);
+
+    this.pc.addTransceiver('video',{
+        direction: 'recvonly'
+    });
 }
 
 WebRtcPeerRecvOnly.prototype.generateOffer = async function generateOffer (option, callback) {
@@ -10,10 +28,10 @@ WebRtcPeerRecvOnly.prototype.generateOffer = async function generateOffer (optio
     await  this.pc.setLocalDescription(await  this.pc.createOffer(option));
 
     if (callback) {
-        callback( this.pc.localDescription.sdp)
+        callback(this.pc.localDescription)
     }
 
-    return this.pc.localDescription.sdp
+    return this.pc.localDescription
 }
 
 WebRtcPeerRecvOnly.prototype.processAnswer = async function processAnswer (sdp, callback) {
@@ -34,12 +52,13 @@ WebRtcPeerRecvOnly.prototype.processAnswer = async function processAnswer (sdp, 
     return true
 }
 
+WebRtcPeerRecvOnly.prototype.destroy = function () {
+    this.pc.close()
+    this.pc = null
+}
+
 export function webRtcRecvOnly(option, callback) {
     const webRtc = new WebRtcPeerRecvOnly(option)
-
-    webRtc.pc.addTransceiver('video',{
-        direction: 'recvonly'
-    });
 
     if (callback) {
         callback(webRtc)

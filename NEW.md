@@ -11,3 +11,14 @@
  * [new tag]         v3.0.5     -> v3.0.5
  * [new tag]         v3.0.6     -> v3.0.6
  * [new tag]         v3.0.7     -> v3.0.7
+
+
+ * [new branch]      MP4        -> upstream/MP4
+ * [new branch]      dev        -> upstream/dev
+ * [new branch]      master     -> upstream/master
+ * [new branch]      v2         -> upstream/v2
+ * [new branch]      v3         -> upstream/v3
+ * [new branch]      webcodecs  -> upstream/webcodecs
+ * [new branch]      worker     -> upstream/worker
+ * [new tag]         v3.0.11    -> v3.0.11
+ * [new tag]         v3.0.10    -> v3.0.10

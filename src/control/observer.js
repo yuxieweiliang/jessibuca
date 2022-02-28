@@ -119,4 +119,9 @@ export default (player, control) => {
     })
 
 
+    //// movement
+    control.on('movement', () => {
+        console.log('control: movement')
+    })
+
 }

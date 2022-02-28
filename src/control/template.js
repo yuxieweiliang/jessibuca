@@ -1,9 +1,16 @@
-import icons from './icons';
+import icons, { attrs } from './icons';
+import Icon from '../assets/icons'
 
 export default (player, control) => {
     player.$container.classList.add('jessibuca-controls-show');
     const options = player._opt;
     const operateBtns = options.operateBtns;
+    const moreIconAttr = {
+        ...attrs,
+        width: '1.5rem',
+        height: '1.5rem',
+        style: 'transform: rotate(-90deg);' + attrs.style
+    }
 
     player.$container.insertAdjacentHTML(
         'beforeend',
@@ -20,7 +27,7 @@ export default (player, control) => {
                         <div class="jessibuca-controls-left">
                             ${options.showBandwidth ? `<div class="jessibuca-controls-item jessibuca-speed"></div>` : ''}
                         </div>
-                        <div class="jessibuca-controls-right">
+                        <div class="jessibuca-controls-right <!--jessibuca-controls-popover-->">
                              ${operateBtns.audio ? `
                                  <div class="jessibuca-controls-item jessibuca-volume">
                                      ${icons.audio}
@@ -38,6 +45,9 @@ export default (player, control) => {
                              ${operateBtns.record ? ` <div class="jessibuca-controls-item jessibuca-record">${icons.record}</div><div class="jessibuca-controls-item jessibuca-record-stop">${icons.recordStop}</div>` : ''}
                              ${operateBtns.fullscreen ? `<div class="jessibuca-controls-item jessibuca-fullscreen">${icons.fullscreen}</div><div class="jessibuca-controls-item jessibuca-fullscreen-exit">${icons.fullscreenExit}</div>` : ''}
                         </div>
+                        <!--<div  class="jessibuca-controls-minimize">
+                          ${ Icon.More(moreIconAttr) }
+                        </div>-->
                     </div>
                 </div>
             ` : ''}
@@ -73,9 +83,9 @@ export default (player, control) => {
         value: player.$container.querySelector('.jessibuca-fullscreen'),
     });
 
-    Object.defineProperty(control, '$fullscreen', {
+    /*Object.defineProperty(control, '$fullscreen', {
         value: player.$container.querySelector('.jessibuca-fullscreen'),
-    });
+    });*/
 
 
     Object.defineProperty(control, '$volume', {
@@ -107,9 +117,9 @@ export default (player, control) => {
     });
 
 
-    Object.defineProperty(control, '$fullscreen', {
+    /*Object.defineProperty(control, '$fullscreen', {
         value: player.$container.querySelector('.jessibuca-fullscreen'),
-    });
+    });*/
 
     Object.defineProperty(control, '$fullscreenExit', {
         value: player.$container.querySelector('.jessibuca-fullscreen-exit'),
