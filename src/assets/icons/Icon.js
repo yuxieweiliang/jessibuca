@@ -26,10 +26,6 @@ export default function createIcon({path, color, className = '', children = '', 
     Object.entries(props).map(([key, value]) => attrs.push(`${key}="${value}"`))
   }
 
-  /*if (React.createElement) {
-
-  }*/
-
   return (
     `<svg
       class="icon ${className}"

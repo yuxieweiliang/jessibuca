@@ -6,6 +6,13 @@ import {EVENTS} from "../constant";
 function assembleUrl (path) {
     const url = new URL(path)
     if (url.origin && url.origin !== 'null') {
+        if (path.indexOf('webrtc/play') > -1) {
+            return path
+        }
+
+        if (path.startsWith('streamPath')) {
+            return `${window.location.origin}/webrtc-api/webrtc/play${url.search}`
+        }
         return `${window.location.origin}/webrtc-api/webrtc/play?streamPath=${url.pathname.substr(1)}`
     } else {
         let pathname = url.pathname
