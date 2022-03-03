@@ -473,7 +473,7 @@ export default class Player extends Emitter {
      *
      */
     resize() {
-        this.video.resize();
+        this.video && this.video.resize();
     }
 
     /**

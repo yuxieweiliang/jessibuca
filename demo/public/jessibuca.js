@@ -1207,6 +1207,16 @@
 
 	}
 
+	function createToggleDisplay(control, playerWidth) {
+	  return function toggleDisplay(elementName, width) {
+	    let defDisplay = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 'block';
+
+	    if (control && control[elementName]) {
+	      setStyle(control[elementName], 'display', playerWidth < width ? 'none' : defDisplay);
+	    }
+	  };
+	}
+
 	class VideoLoader extends CommonLoader$1 {
 	  constructor(player) {
 	    super();
@@ -1305,7 +1315,8 @@
 	    this.$videoElement.height = this.player._opt.hasControl ? this.player.height - CONTROL_HEIGHT : this.player.height;
 	    const option = this.player._opt;
 	    let objectFill = 'contain';
-	    const rotate = option.rotate; // 默认是true
+	    const rotate = option.rotate;
+	    const toggleDisplay = createToggleDisplay(control, playerWidth); // 默认是true
 	    // 视频画面做等比缩放后,高或宽对齐canvas区域,画面不被拉伸,但有黑边
 	    // 视频画面完全填充canvas区域,画面会被拉伸
 
@@ -1326,14 +1337,17 @@
 	    } else {
 	      this.$videoElement.style.transform = 'rotate(' + rotate + 'deg)';
 	    }
+	    /*function toggleDisplay(elementName, width, defDisplay = 'block') {
+	        if (control && control[elementName]) {
+	            setStyle(
+	                control[elementName],
+	                'display',
+	                (playerWidth < width) ? 'none' : defDisplay
+	            )
+	        }
+	        console.log(elementName, (playerWidth < width) ? 'none' : defDisplay, control && control[elementName])
+	    }*/
 
-	    function toggleDisplay(elementName, width) {
-	      let defDisplay = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 'block';
-
-	      if (control && control[elementName]) {
-	        setStyle(control[elementName], 'display', playerWidth < width ? 'none' : defDisplay);
-	      }
-	    }
 
 	    toggleDisplay('$screenshot', 500);
 
@@ -1391,10 +1405,10 @@
 	    }
 
 	    if (this.player && this.player.control) {
+	      // console.log('resize -------------- resize', this.player)
 	      this.player.control.emit('resize', this.$videoElement);
-	    }
+	    } // console.log('resize -------------- resize', this.player)
 
-	    console.log('resize -------------- resize', this.player);
 	  }
 
 	  getNewVideo(player) {
@@ -10214,9 +10228,6 @@
 	      return attrs.push(`${key}="${value}"`);
 	    });
 	  }
-	  /*if (React.createElement) {
-	   }*/
-
 
 	  return `<svg
       class="icon ${className}"
@@ -10741,6 +10752,14 @@ M769.322667 708.992l182.741333 182.698667-60.373333 60.373333-182.698667-182.741
 	magnifier.zoom_out_line = zoom_out_line;
 	magnifier.zoom_out_fill = zoom_out_fill;
 
+	// 实心
+	const icon_close = `
+M512 85.333333C276.352 85.333333 85.333333 276.352 85.333333 512s191.018667 426.666667 426.666667 426.666667 426.666667-191.018667 426.666667-426.666667S747.648 85.333333 512 85.333333zM350.72 350.72a32 32 0 0 1 45.226667 0l126.72 126.72 126.72-126.72a32 32 0 1 1 45.226666 45.226667l-126.72 126.72 126.72 126.72a32 32 0 1 1-45.226666 45.226666l-126.72-126.72-126.72 126.72a32 32 0 0 1-45.226667-45.226666l126.72-126.72-126.72-126.72a32 32 0 0 1 0-45.226667z
+`;
+	var circular = {
+	  icon_close
+	};
+
 	const Icon = {};
 	/**
 	 * 箭头类
@@ -11091,6 +11110,10 @@ M769.322667 708.992l182.741333 182.698667-60.373333 60.373333-182.698667-182.741
 	Icon.ZoomInFill = ZoomInFill;
 	Icon.ZoomOutLine = ZoomOutLine;
 	Icon.ZoomOutFill = ZoomOutFill;
+	const Close = props => createIcon({ ...props,
+	  path: circular.icon_close
+	});
+	Icon.Close = Close;
 	window.__Icons = Icon;
 
 	const attrs = {
@@ -11153,8 +11176,8 @@ M769.322667 708.992l182.741333 182.698667-60.373333 60.373333-182.698667-182.741
 	  // zoomIn: '放大',
 	  // zoomOut: '缩小',
 
-	};
-	console.log(Icon);
+	}; // console.log(Icon)
+
 	var icons = Object.keys(iconsMap).reduce((icons, key) => {
 	  icons[key] = `<div class="jessibuca-icon jessibuca-icon-${key}">${iconsMap[key].icon}</div>`;
 
@@ -11370,11 +11393,20 @@ M769.322667 708.992l182.741333 182.698667-60.373333 60.373333-182.698667-182.741
 	  player.on(EVENTS.recordingTimestamp, timestamp => {// console.log(timestamp);
 	  });
 	  player.on(EVENTS.playing, flag => {
+	    const playerWidth = player.width;
+	    const toggleDisplay = createToggleDisplay(control, playerWidth);
+
+	    if (flag) {
+	      toggleDisplay('$screenshot', 500, 'flex');
+	      toggleDisplay('$record', 300, 'flex');
+	    } else {
+	      setStyle(control.$screenshot, 'display', 'none');
+	      setStyle(control.$record, 'display', 'none');
+	    }
+
 	    setStyle(control.$play, 'display', flag ? 'none' : 'flex');
 	    setStyle(control.$playBig, 'display', flag ? 'none' : 'block');
 	    setStyle(control.$pause, 'display', flag ? 'flex' : 'none');
-	    setStyle(control.$screenshot, 'display', flag ? 'flex' : 'none');
-	    setStyle(control.$record, 'display', flag ? 'flex' : 'none');
 	    setStyle(control.$fullscreen, 'display', flag ? 'flex' : 'none'); // 不在播放
 
 	    if (!flag) {
@@ -11824,6 +11856,14 @@ M769.322667 708.992l182.741333 182.698667-60.373333 60.373333-182.698667-182.741
 	  const url = new URL(path);
 
 	  if (url.origin && url.origin !== 'null') {
+	    if (path.indexOf('webrtc/play') > -1) {
+	      return path;
+	    }
+
+	    if (path.startsWith('streamPath')) {
+	      return `${window.location.origin}/webrtc-api/webrtc/play${url.search}`;
+	    }
+
 	    return `${window.location.origin}/webrtc-api/webrtc/play?streamPath=${url.pathname.substr(1)}`;
 	  } else {
 	    let pathname = url.pathname;
@@ -12225,8 +12265,8 @@ M769.322667 708.992l182.741333 182.698667-60.373333 60.373333-182.698667-182.741
 	      }
 
 	      this._opt.url = url;
-	      this.clearCheckHeartTimeout();
-	      console.log('useWebRTC', this); // 使用WebRTC
+	      this.clearCheckHeartTimeout(); // console.log('useWebRTC', this)
+	      // 使用WebRTC
 
 	      if (this._opt.useWebRTC) {
 	        // 不静音
@@ -12374,7 +12414,7 @@ M769.322667 708.992l182.741333 182.698667-60.373333 60.373333-182.698667-182.741
 
 
 	  resize() {
-	    this.video.resize();
+	    this.video && this.video.resize();
 	  }
 	  /**
 	   *
@@ -14814,7 +14854,7 @@ M769.322667 708.992l182.741333 182.698667-60.373333 60.373333-182.698667-182.741
 
 
 	  play(url) {
-	    console.log('play');
+	    // console.log('play')
 	    return new Promise((resolve, reject) => {
 	      if (!url && !this._opt.url) {
 	        this.emit(EVENTS.error, EVENTS_ERROR.playError);
@@ -14922,7 +14962,7 @@ M769.322667 708.992l182.741333 182.698667-60.373333 60.373333-182.698667-182.741
 
 
 	  resize() {
-	    this.player.resize();
+	    this.player && this.player.resize();
 	  }
 	  /**
 	   *

@@ -295,7 +295,7 @@ class Jessibuca extends Emitter {
      *
      */
     resize() {
-        this.player.resize();
+        this.player && this.player.resize();
     }
 
     /**

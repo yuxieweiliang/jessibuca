@@ -9,8 +9,9 @@ import move from './tool/move';
 import rotation from './rotation';
 import screen from './tool/screen';
 import trending from './trending';
-import business, {icon_wifi_guarantee} from './business/business';
+import business from './business/business';
 import magnifier from './magnifier';
+import circular from './circular';
 
 const Icon = {};
 /**
@@ -230,6 +231,9 @@ Icon.ZoomInLine = ZoomInLine;
 Icon.ZoomInFill = ZoomInFill;
 Icon.ZoomOutLine = ZoomOutLine;
 Icon.ZoomOutFill = ZoomOutFill;
+
+export const Close = (props) => createIcon({ ...props, path: circular.icon_close });
+Icon.Close = Close;
 
 window.__Icons = Icon;
 export default Icon

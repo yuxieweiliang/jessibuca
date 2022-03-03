@@ -1,5 +1,6 @@
 import {EVENTS} from "../constant";
 import {bpsSize, getStyle, setStyle} from "../utils";
+import { createToggleDisplay } from "../utils/toggleDisplay";
 import screenfull from "screenfull";
 
 export default (player, control) => {
@@ -99,11 +100,19 @@ export default (player, control) => {
     })
 
     player.on(EVENTS.playing, (flag) => {
+        const playerWidth = player.width;
+        const toggleDisplay = createToggleDisplay(control, playerWidth);
+        if (flag) {
+            toggleDisplay('$screenshot', 500, 'flex')
+            toggleDisplay('$record', 300, 'flex')
+        } else {
+            setStyle(control.$screenshot, 'display', 'none');
+            setStyle(control.$record, 'display', 'none');
+        }
+
         setStyle(control.$play, 'display', flag ? 'none' : 'flex');
         setStyle(control.$playBig, 'display', flag ? 'none' : 'block');
         setStyle(control.$pause, 'display', flag ? 'flex' : 'none');
-        setStyle(control.$screenshot, 'display', flag ? 'flex' : 'none');
-        setStyle(control.$record, 'display', flag ? 'flex' : 'none');
         setStyle(control.$fullscreen, 'display', flag ? 'flex' : 'none');
 
         // 不在播放

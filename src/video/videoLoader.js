@@ -1,7 +1,9 @@
 import Emitter from "../utils/emitter";
 import {CONTROL_HEIGHT, EVENTS, SCREENSHOT_TYPE, VIDEO_ENC_TYPE} from "../constant";
 import {dataURLToFile, downloadImg, now, setStyle} from "../utils";
+import { createToggleDisplay } from "../utils/toggleDisplay";
 import CommonLoader from "./commonLoader";
+
 
 export default class VideoLoader extends CommonLoader {
     constructor(player) {
@@ -102,6 +104,7 @@ export default class VideoLoader extends CommonLoader {
         const option = this.player._opt;
         let objectFill = 'contain';
         const rotate = option.rotate;
+        const toggleDisplay = createToggleDisplay(control, playerWidth);
 
         // 默认是true
         // 视频画面做等比缩放后,高或宽对齐canvas区域,画面不被拉伸,但有黑边
@@ -123,7 +126,7 @@ export default class VideoLoader extends CommonLoader {
             this.$videoElement.style.transform = 'rotate(' + rotate + 'deg)';
         }
 
-        function toggleDisplay(elementName, width, defDisplay = 'block') {
+        /*function toggleDisplay(elementName, width, defDisplay = 'block') {
             if (control && control[elementName]) {
                 setStyle(
                     control[elementName],
@@ -131,7 +134,8 @@ export default class VideoLoader extends CommonLoader {
                     (playerWidth < width) ? 'none' : defDisplay
                 )
             }
-        }
+            console.log(elementName, (playerWidth < width) ? 'none' : defDisplay, control && control[elementName])
+        }*/
 
         toggleDisplay('$screenshot', 500)
 
@@ -188,6 +192,7 @@ export default class VideoLoader extends CommonLoader {
         }
 
         if (this.player && this.player.control) {
+            // console.log('resize -------------- resize', this.player)
             this.player.control.emit('resize', this.$videoElement);
         }
         // console.log('resize -------------- resize', this.player)

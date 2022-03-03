@@ -56,7 +56,7 @@ const iconsMap = {
     // zoomOut: '缩小',
 };
 
-console.log(Icon)
+// console.log(Icon)
 export default Object.keys(iconsMap).reduce((icons, key) => {
     icons[key] = `<div class="jessibuca-icon jessibuca-icon-${key}">${ iconsMap[key].icon }</div>`;
     if (iconsMap[key].withTips) {
