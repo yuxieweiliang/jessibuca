@@ -192,8 +192,8 @@
         }
     }
 
-    &:hover {
-        &.jessibuca-controls-show .jessibuca-controls {
+    &.jessibuca-controls-show:hover {
+        .jessibuca-controls {
             opacity: 1;
             background-color: rgba(22, 22, 22, .8);
             visibility: visible;
