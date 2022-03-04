@@ -218,7 +218,8 @@ export const H265_NAL_TYPE = {
     pps: 34
 }
 
-export const CONTROL_HEIGHT = 38
+// export const CONTROL_HEIGHT = 38
+export const CONTROL_HEIGHT = 0
 
 export const SCALE_MODE_TYPE = {
     full: 0, //  视频画面完全填充canvas区域,画面会被拉伸
