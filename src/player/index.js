@@ -447,35 +447,30 @@ export default class Player extends Emitter {
 
                     this.stream.fetchStream(url);
 
+                    //
+                    this.checkLoadingTimeout();
+                    // fetch error
+                    this.stream.once(EVENTS_ERROR.fetchError, (error) => {
+                        reject(error)
+                    })
+
+                    // ws
+                    this.stream.once(EVENTS_ERROR.websocketError, (error) => {
+                        reject(error)
+                    })
+
                     // success
                     this.stream.once(EVENTS.streamSuccess, () => {
                         resolve();
                         this._times.streamResponse = now();
                         //
-                        this.checkLoadingTimeout();
-                        // fetch error
-                        this.stream.once(EVENTS_ERROR.fetchError, (error) => {
-                            reject(error)
-                        })
-
-                        // ws
-                        this.stream.once(EVENTS_ERROR.websocketError, (error) => {
-                            reject(error)
-                        })
-
-                        // success
-                        this.stream.once(EVENTS.streamSuccess, () => {
-                            resolve();
-                            //
-                            if (this._opt.useMSE) {
-                                this.video.play();
-                            }
-                        })
-
-                    }).catch((e) => {
-                        reject(e)
+                        if (this._opt.useMSE) {
+                            this.video.play();
+                        }
                     })
 
+                }).catch((e) => {
+                    reject(e)
                 })
             }
         })

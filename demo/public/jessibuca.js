@@ -2006,7 +2006,7 @@
 	  // RecordRTC.js
 
 	  /**
-	   * {@link https://github.com/muaz-khan/RecordRTC|RecordRTC} is a WebRTC JavaScript library for audio/video as well as screen activity recording. It supports Chrome, Firefox, Opera, Android, and Microsoft Edge. Platforms: Linux, Mac and Windows.
+	   * {@link https://github.com/muaz-khan/RecordRTC|RecordRTC} is a WebRTC JavaScript library for audio/video as well as screen activity recording. It supports Chrome, Firefox, Opera, Android, and Microsoft Edge. Platforms: Linux, Mac and Windows. 
 	   * @summary Record audio, video or screen inside the browser.
 	   * @license {@link https://github.com/muaz-khan/RecordRTC/blob/master/LICENSE|MIT}
 	   * @author {@link https://MuazKhan.com|Muaz Khan}
@@ -2402,7 +2402,7 @@
 	       *    var blob = this.getBlob();
 	       *    video.src = this.toURL();
 	       * });
-	       *
+	       * 
 	       * // or otherwise
 	       * recorder.setRecordingDuration(fiveMinutes).onRecordingStopped(function() {
 	       *    var blob = this.getBlob();
@@ -4457,8 +4457,8 @@
 
 	    this.getAllStates = function () {
 	      return allStates;
-	    }; // if any Track within the MediaStream is muted or not enabled at any time,
-	    // the browser will only record black frames
+	    }; // if any Track within the MediaStream is muted or not enabled at any time, 
+	    // the browser will only record black frames 
 	    // or silence since that is the content produced by the Track
 	    // so we need to stopRecording as soon as any single track ends.
 
@@ -4565,8 +4565,8 @@
 
 	    if (!config.disableLogs) {
 	      console.log('StereoAudioRecorder is set to record number of channels: ' + numberOfAudioChannels);
-	    } // if any Track within the MediaStream is muted or not enabled at any time,
-	    // the browser will only record black frames
+	    } // if any Track within the MediaStream is muted or not enabled at any time, 
+	    // the browser will only record black frames 
 	    // or silence since that is the content produced by the Track
 	    // so we need to stopRecording as soon as any single track ends.
 
@@ -4725,34 +4725,34 @@
 
 	        var resultingBufferLength = 44 + interleavedLength * 2;
 	        var buffer = new ArrayBuffer(resultingBufferLength);
-	        var view = new DataView(buffer); // RIFF chunk descriptor/identifier
+	        var view = new DataView(buffer); // RIFF chunk descriptor/identifier 
 
 	        writeUTFBytes(view, 0, 'RIFF'); // RIFF chunk length
 	        // changed "44" to "36" via #401
 
-	        view.setUint32(4, 36 + interleavedLength * 2, true); // RIFF type
+	        view.setUint32(4, 36 + interleavedLength * 2, true); // RIFF type 
 
-	        writeUTFBytes(view, 8, 'WAVE'); // format chunk identifier
+	        writeUTFBytes(view, 8, 'WAVE'); // format chunk identifier 
 	        // FMT sub-chunk
 
-	        writeUTFBytes(view, 12, 'fmt '); // format chunk length
+	        writeUTFBytes(view, 12, 'fmt '); // format chunk length 
 
 	        view.setUint32(16, 16, true); // sample format (raw)
 
 	        view.setUint16(20, 1, true); // stereo (2 channels)
 
-	        view.setUint16(22, numberOfAudioChannels, true); // sample rate
+	        view.setUint16(22, numberOfAudioChannels, true); // sample rate 
 
 	        view.setUint32(24, sampleRate, true); // byte rate (sample rate * block align)
 
-	        view.setUint32(28, sampleRate * numberOfAudioChannels * 2, true); // block align (channel count * bytes per sample)
+	        view.setUint32(28, sampleRate * numberOfAudioChannels * 2, true); // block align (channel count * bytes per sample) 
 
-	        view.setUint16(32, numberOfAudioChannels * 2, true); // bits per sample
+	        view.setUint16(32, numberOfAudioChannels * 2, true); // bits per sample 
 
 	        view.setUint16(34, 16, true); // data sub-chunk
-	        // data chunk identifier
+	        // data chunk identifier 
 
-	        writeUTFBytes(view, 36, 'data'); // data chunk length
+	        writeUTFBytes(view, 36, 'data'); // data chunk length 
 
 	        view.setUint32(40, interleavedLength * 2, true); // write the PCM samples
 
@@ -5297,7 +5297,7 @@
 
 	        if (!canvasMediaStream) {
 	          throw 'captureStream API are NOT available.';
-	        } // Note: Jan 18, 2016 status is that,
+	        } // Note: Jan 18, 2016 status is that, 
 	        // Firefox MediaRecorder API can't record CanvasCaptureMediaStream object.
 
 
@@ -6614,24 +6614,24 @@
 	      } // external library to record as GIF images
 
 
-	      gifEncoder = new GIFEncoder(); // void setRepeat(int iter)
-	      // Sets the number of times the set of GIF frames should be played.
+	      gifEncoder = new GIFEncoder(); // void setRepeat(int iter) 
+	      // Sets the number of times the set of GIF frames should be played. 
 	      // Default is 1; 0 means play indefinitely.
 
-	      gifEncoder.setRepeat(0); // void setFrameRate(Number fps)
-	      // Sets frame rate in frames per second.
+	      gifEncoder.setRepeat(0); // void setFrameRate(Number fps) 
+	      // Sets frame rate in frames per second. 
 	      // Equivalent to setDelay(1000/fps).
 	      // Using "setDelay" instead of "setFrameRate"
 
-	      gifEncoder.setDelay(config.frameRate || 200); // void setQuality(int quality)
-	      // Sets quality of color quantization (conversion of images to the
-	      // maximum 256 colors allowed by the GIF specification).
-	      // Lower values (minimum = 1) produce better colors,
-	      // but slow processing significantly. 10 is the default,
-	      // and produces good color mapping at reasonable speeds.
+	      gifEncoder.setDelay(config.frameRate || 200); // void setQuality(int quality) 
+	      // Sets quality of color quantization (conversion of images to the 
+	      // maximum 256 colors allowed by the GIF specification). 
+	      // Lower values (minimum = 1) produce better colors, 
+	      // but slow processing significantly. 10 is the default, 
+	      // and produces good color mapping at reasonable speeds. 
 	      // Values greater than 20 do not yield significant improvements in speed.
 
-	      gifEncoder.setQuality(config.quality || 10); // Boolean start()
+	      gifEncoder.setQuality(config.quality || 10); // Boolean start() 
 	      // This writes the GIF Header and returns false if it fails.
 
 	      gifEncoder.start();
@@ -7613,7 +7613,7 @@
 	   * recorder.startRecording()
 	   *         .then(successCB)
 	   *         .catch(errorCB);
-	   * // Note: You can access all RecordRTC API using "recorder.recordRTC" e.g.
+	   * // Note: You can access all RecordRTC API using "recorder.recordRTC" e.g. 
 	   * recorder.recordRTC.onStateChanged = function(state) {};
 	   * recorder.recordRTC.setRecordingDuration(5000);
 	   * @see {@link https://github.com/muaz-khan/RecordRTC|RecordRTC Source Code}
@@ -7789,7 +7789,7 @@
 	     *     internalRecorder.addStreams([newAudioStream]);
 	     *     internalRecorder.resetVideoStreams([screenStream]);
 	     * }
-	     * @returns {Object}
+	     * @returns {Object} 
 	     */
 
 
@@ -10445,7 +10445,7 @@ M321.962667 139.861333c7.082667 5.12 18.517333 16.853333 18.517333 16.853334 44.
 M880.298667 297.984L761.173333 419.84v-72.362667c0-76.117333-61.44-137.557333-137.557333-137.557333H192.853333c-76.117333 0-137.557333 61.44-137.557333 137.557333v374.101334c0 76.117333 61.44 137.557333 137.557333 137.557333h430.421334c76.117333 0 137.557333-61.44 137.557333-137.557333v-64.170667l119.125333 113.664c32.426667 33.109333 88.405333 10.24 88.405334-36.181333V333.824c0.341333-46.08-55.637333-68.949333-88.064-35.84zM358.4 405.845333H186.368c-19.114667 0-34.474667-15.36-34.474667-34.474666s15.36-34.474667 34.474667-34.474667h172.032c19.114667 0 34.474667 15.36 34.474667 34.474667a34.816 34.816 0 0 1-34.474667 34.474666z
 `;
 	const xxxx = `
-M345.344
+M345.344 
 `;
 	camera.video_camera = video_camera;
 	camera.xxxx = xxxx;
@@ -12559,32 +12559,28 @@ M512 85.333333C276.352 85.333333 85.333333 276.352 85.333333 512s191.018667 426.
 	          }
 
 	          this.enableWakeLock();
-	          this.stream.fetchStream(url); // success
+	          this.stream.fetchStream(url); //
+
+	          this.checkLoadingTimeout(); // fetch error
+
+	          this.stream.once(EVENTS_ERROR.fetchError, error => {
+	            reject(error);
+	          }); // ws
+
+	          this.stream.once(EVENTS_ERROR.websocketError, error => {
+	            reject(error);
+	          }); // success
 
 	          this.stream.once(EVENTS.streamSuccess, () => {
 	            resolve();
 	            this._times.streamResponse = now(); //
 
-	            this.checkLoadingTimeout(); // fetch error
-
-	            this.stream.once(EVENTS_ERROR.fetchError, error => {
-	              reject(error);
-	            }); // ws
-
-	            this.stream.once(EVENTS_ERROR.websocketError, error => {
-	              reject(error);
-	            }); // success
-
-	            this.stream.once(EVENTS.streamSuccess, () => {
-	              resolve(); //
-
-	              if (this._opt.useMSE) {
-	                this.video.play();
-	              }
-	            });
-	          }).catch(e => {
-	            reject(e);
+	            if (this._opt.useMSE) {
+	              this.video.play();
+	            }
 	          });
+	        }).catch(e => {
+	          reject(e);
 	        });
 	      }
 	    });
