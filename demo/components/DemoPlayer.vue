@@ -133,7 +133,7 @@ export default {
             recording: false,
             recordType: 'webm',
             scale: 0,
-            vConsole:null
+            vConsole: null
         };
     },
     mounted() {
@@ -164,7 +164,11 @@ export default {
                         loadingText: "疯狂加载中...",
                         // hasAudio:false,
                         debug: false,
+<<<<<<< HEAD
                         useWebRTC: true,
+=======
+                        // hasAudio:false,
+>>>>>>> 81e1e628249c388fcbfede66d602ef99d81a8b36
                         supportDblclickFullscreen: true,
                         showBandwidth: this.showBandwidth, // 显示网速
                         operateBtns: {
@@ -273,7 +277,11 @@ export default {
                 console.log('recordingTimestamp', ts);
             })
 
+            this.jessibuca.on('playToRenderTimes', (times) => {
+                console.log(times);
+            })
 
+            // this.play();
             // console.log(this.jessibuca);
         },
         play() {

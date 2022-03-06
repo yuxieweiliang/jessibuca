@@ -4,6 +4,7 @@ import property from './property';
 import events from './events';
 import './style.scss'
 import Emitter from "../utils/emitter";
+import hotkey from "./hotkey";
 
 export default class Control extends Emitter {
     constructor(player) {
@@ -17,7 +18,23 @@ export default class Control extends Emitter {
         this.movement = false;
         this.transform = false;
         this.zoom = 1;
+        if (player._opt.hotKey) {
+            hotkey(player, this);
+        }
         this.player.debug.log('Control', 'init');
+    }
+
+    destroy() {
+        if (this.$poster) {
+            this.player.$container.removeChild(this.$poster);
+        }
+        if (this.$loading) {
+            this.player.$container.removeChild(this.$loading);
+        }
+        if (this.$controls) {
+            this.player.$container.removeChild(this.$controls);
+        }
+        this.player.debug.log('control', 'destroy');
     }
 
     autoSize() {
@@ -38,14 +55,4 @@ export default class Control extends Emitter {
         }
     }
 
-    destroy() {
-        if (this.$poster) {
-            this.player.$container.removeChild(this.$poster);
-        }
-        this.player.$container.removeChild(this.$loading);
-        if (this.$controls) {
-            this.player.$container.removeChild(this.$controls);
-        }
-        this.player.debug.log('control', 'destroy');
-    }
 }

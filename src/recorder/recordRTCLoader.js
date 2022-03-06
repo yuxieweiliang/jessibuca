@@ -15,6 +15,11 @@ export default class RecordRTCLoader extends Emitter {
         player.debug.log('Recorder', 'init');
     }
 
+    destroy() {
+        this._reset();
+        this.player.debug.log('Recorder', 'destroy');
+    }
+
     setFileName(fileName, fileType) {
         this.fileName = fileName;
 
@@ -43,11 +48,15 @@ export default class RecordRTCLoader extends Emitter {
         }
 
         try {
-
             const stream = this.player.video.$videoElement.captureStream(25);
-            const audioStream = this.player.audio.mediaStreamAudioDestinationNode.stream;
-            if (this.player.hasAudio) {
-                stream.addTrack(audioStream.getAudioTracks()[0]);
+            if (this.player.audio.mediaStreamAudioDestinationNode && this.player.audio.mediaStreamAudioDestinationNode.stream && !this.player.audio.isStateSuspended() && this.player.audio.hasAudio) {
+                const audioStream = this.player.audio.mediaStreamAudioDestinationNode.stream;
+                if (audioStream.getAudioTracks().length > 0) {
+                    const audioTrack = audioStream.getAudioTracks()[0];
+                    if (audioTrack && audioTrack.enabled) {
+                        stream.addTrack(audioTrack);
+                    }
+                }
             }
             this.recorder = RecordRTC(stream, options);
         } catch (e) {
@@ -56,7 +65,7 @@ export default class RecordRTCLoader extends Emitter {
         }
         if (this.recorder) {
             this.isRecording = true;
-            this.player.emit(EVENTS.recording, true);
+            this.emit(EVENTS.recording, true);
             this.recorder.startRecording();
             debug.log('Recorder', 'start recording');
             this.player.emit(EVENTS.recordStart);
@@ -95,8 +104,5 @@ export default class RecordRTCLoader extends Emitter {
         this.recordingInterval = null;
     }
 
-    destroy() {
-        this._reset();
-        this.player.debug.log('Recorder', 'destroy');
-    }
+
 }

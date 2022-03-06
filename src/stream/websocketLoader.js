@@ -1,6 +1,6 @@
 import Emitter from "../utils/emitter";
 import {EVENTS, EVENTS_ERROR, WEBSOCKET_STATUS} from "../constant";
-import {calculationRate} from "../utils";
+import {calculationRate, now} from "../utils";
 
 export default class WebsocketLoader extends Emitter {
     constructor(player) {
@@ -13,6 +13,18 @@ export default class WebsocketLoader extends Emitter {
         this.streamRate = calculationRate(rate => {
             player.emit(EVENTS.kBps, (rate / 1024).toFixed(2));
         });
+    }
+
+    destroy() {
+        if (this.socket) {
+            this.socket.close();
+            this.socket = null;
+        }
+        this.socketStatus = WEBSOCKET_STATUS.notConnect;
+        this.streamRate = null;
+        this.wsUrl = null;
+        this.off();
+        this.player.debug.log('websocketLoader', 'destroy');
     }
 
     _createWebSocket() {
@@ -65,19 +77,10 @@ export default class WebsocketLoader extends Emitter {
 
 
     fetchStream(url) {
+        this.player._times.streamStart = now();
         this.wsUrl = url;
         this._createWebSocket();
     }
 
 
-    destroy() {
-        if (this.socket) {
-            this.socket.close();
-            this.socket = null;
-        }
-        this.socketStatus = WEBSOCKET_STATUS.notConnect;
-        this.streamRate = null;
-        this.off();
-        this.player.debug.log('websocketLoader', 'destroy');
-    }
 }

@@ -44,6 +44,14 @@ export default class VideoLoader extends CommonLoader {
         this.player.debug.log('Video', 'init');
     }
 
+    destroy() {
+        this.player.$container.removeChild(this.$videoElement);
+        this.$videoElement = null;
+        this.init = false;
+        this.off();
+        this.player.debug.log('Video', 'destroy');
+    }
+
     play() {
         // this.$videoElement.autoplay = true;
         this.$videoElement.play();
@@ -232,13 +240,6 @@ export default class VideoLoader extends CommonLoader {
                 $oldVideo = null;
             }
         }
-    }
-
-    destroy() {
-        this.player.$container.removeChild(this.$videoElement);
-        this.init = false;
-        this.off();
-        this.player.debug.log('Video', 'destroy');
     }
 
 }

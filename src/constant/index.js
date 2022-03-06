@@ -17,6 +17,7 @@ export const DEFAULT_PLAYER_OPTIONS = {
     isFullResize: false, //
     isFlv: false,
     debug: false,
+    hotKey: false, // 快捷键
     loadingTimeout: 10, // loading timeout
     heartTimeout: 10,  // heart timeout
     timeout: 10, // second
@@ -138,6 +139,7 @@ export const EVENTS = {
     videoWaiting: 'videoWaiting',
     videoTimeUpdate: 'videoTimeUpdate',
     videoSyncAudio: 'videoSyncAudio',
+    playToRenderTimes: 'playToRenderTimes'
 }
 
 
@@ -161,7 +163,8 @@ export const JESSIBUCA_EVENTS = {
     performance: EVENTS.performance,
     recordingTimestamp: EVENTS.recordingTimestamp,
     recordStart: EVENTS.recordStart,
-    recordEnd: EVENTS.recordEnd
+    recordEnd: EVENTS.recordEnd,
+    playToRenderTimes: EVENTS.playToRenderTimes
 }
 
 export const EVENTS_ERROR = {
@@ -263,4 +266,11 @@ export const MEDIA_SOURCE_STATE = {
 export const FRAG_DURATION = Math.ceil(1000 / 25)
 
 
-export const AUDIO_SYNC_VIDEO_DIFF = 200;
+export const AUDIO_SYNC_VIDEO_DIFF = 1000;
+
+
+export const HOT_KEY = {
+    esc: 27, //
+    arrowUp: 38, //
+    arrowDown: 40, //
+}
