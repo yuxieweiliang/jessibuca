@@ -116,7 +116,9 @@ export default class MseDecoder extends Emitter {
         // ftyp
         const metaBox = MP4.generateInitSegment(metaData);
         this.isAvc = true;
-        this.appendBuffer(metaBox.buffer);
+        if (metaBox.buffer) {
+            this.appendBuffer(metaBox.buffer);
+        }
         this.sequenceNumber = 0;
         this.cacheTrack = null;
         this.timeInit = false;
@@ -157,7 +159,9 @@ export default class MseDecoder extends Emitter {
             result.set(moofbox, 0);
             result.set(mdatbox, moofbox.byteLength);
             // appendBuffer
-            this.appendBuffer(result.buffer)
+            if (result.buffer) {
+                this.appendBuffer(result.buffer)
+            }
             player.handleRender();
             player.updateStats({fps: true, ts: ts, buf: player.demux.delay})
         } else {
@@ -205,6 +209,10 @@ export default class MseDecoder extends Emitter {
             debug,
             events: {proxy},
         } = this.player;
+
+        if (buffer === null) {
+            return;
+        }
 
         if (this.sourceBuffer === null) {
             this.sourceBuffer = this.mediaSource.addSourceBuffer(MP4_CODECS.avc);

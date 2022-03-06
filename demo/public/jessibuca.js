@@ -9467,7 +9467,11 @@
 
 	    const metaBox = MP4$1.generateInitSegment(metaData);
 	    this.isAvc = true;
-	    this.appendBuffer(metaBox.buffer);
+
+	    if (metaBox.buffer) {
+	      this.appendBuffer(metaBox.buffer);
+	    }
+
 	    this.sequenceNumber = 0;
 	    this.cacheTrack = null;
 	    this.timeInit = false;
@@ -9507,7 +9511,10 @@
 	      result.set(moofbox, 0);
 	      result.set(mdatbox, moofbox.byteLength); // appendBuffer
 
-	      this.appendBuffer(result.buffer);
+	      if (result.buffer) {
+	        this.appendBuffer(result.buffer);
+	      }
+
 	      player.handleRender();
 	      player.updateStats({
 	        fps: true,
@@ -9560,6 +9567,10 @@
 	        proxy
 	      }
 	    } = this.player;
+
+	    if (buffer === null) {
+	      return;
+	    }
 
 	    if (this.sourceBuffer === null) {
 	      this.sourceBuffer = this.mediaSource.addSourceBuffer(MP4_CODECS.avc);
