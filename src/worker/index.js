@@ -39,7 +39,6 @@ export default class DecoderWorker {
 
         this.decoderWorker.onmessage = (event) => {
             const msg = event.data;
-            console.log('--------------------------', event)
             switch (msg.cmd) {
                 case WORKER_CMD_TYPE.init:
                     debug.log(`decoderWorker`, 'onmessage:', WORKER_CMD_TYPE.init);

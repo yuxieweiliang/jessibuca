@@ -348,6 +348,17 @@ export function isNotEmpty(value) {
     return !isEmpty(value)
 }
 
+export function defNumber(value, initial) {
+    if (isNotEmpty(value) && typeof value === "number" && typeof +value === "number") {
+        if (initial && initial > value) {
+            return initial
+        }
+        return value
+    } else {
+        return initial
+    }
+}
+
 export function initPlayTimes() {
     return {
         playInitStart: '', //1

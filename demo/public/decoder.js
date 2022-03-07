@@ -6442,6 +6442,11 @@
 	  // heart timeout
 	  timeout: 10,
 	  // second
+	  // WebRTC 刷新时间
+	  webRTCRefreshTime: 1000 * 60 * 60,
+	  // refresh time
+	  // 断网重连，每隔多少秒重新连接一次。
+	  offLineReconnectTime: 1000 * 3,
 	  supportDblclickFullscreen: false,
 	  showBandwidth: false,
 	  //
@@ -6449,12 +6454,20 @@
 	  isNotMute: false,
 	  hasAudio: true,
 	  hasVideo: true,
+	  useWebRTC: true,
 	  operateBtns: {
 	    fullscreen: false,
 	    screenshot: false,
 	    play: false,
 	    audio: false,
-	    record: false
+	    // 录制屏幕
+	    record: false // 云台控制
+	    // movement: false,
+	    // 变换 3D
+	    // transform: false,
+	    // 放大缩小
+	    // zoom: false,
+
 	  },
 	  hasControl: false,
 	  loadingText: '',

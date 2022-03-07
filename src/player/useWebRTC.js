@@ -40,12 +40,24 @@ function getOldVideoKey () {
 const map = new WeakMap();
 async function WebRTCVideo(player) {
     const streamPath = assembleUrl(player._opt.url)
-    const timeRefresh = player._opt.timeRefresh
+    const timeRefresh = player._opt.webRTCRefreshTime
     let $webRTCVideo = player.$container.$videoElement
     let $oldVideo = $webRTCVideo
     map.set($webRTCVideo, new WebRtcPeerRecvOnly())
     let __timer = null
     let __TimerWebRTC = null
+
+    webRTCErrorHandle(map.get($webRTCVideo).pc, {
+        connectionStateFailed: () => {
+            player.loading = true
+            resetWebRTC()
+        },
+        framesDroppedFailed: () => {
+            player.loading = true
+            resetWebRTC()
+        },
+    })
+
 
     function ontrack (event, __webRTCVideo) {
         clearTimeout(__timer)
@@ -65,16 +77,21 @@ async function WebRTCVideo(player) {
         $oldVideo.srcObject = undefined;
         $oldVideo.src = '';
         $oldVideo.load();
+
         // 把上一个卸载了。
-        player.video.destroyVideo($oldVideo)
-        if (map.has($oldVideo)) {
-            map.get($oldVideo).destroy()
-            map.delete($oldVideo)
-            $oldVideo = $webRTCVideo
+        if ($oldVideo) {
+            console.log($oldVideo)
+            player.video.destroyVideo($oldVideo)
+
+            if (map.has($oldVideo)) {
+                map.get($oldVideo).destroy()
+                map.delete($oldVideo)
+                $oldVideo = $webRTCVideo
+            }
         }
     }
 
-    function resetWebRTC () {
+    async function resetWebRTC () {
         player.__deleteWebRTCTimer = setTimeout(deleteWebRTC, 1000)
         // 创建新 video
         player.video = new Video(player)
@@ -93,38 +110,55 @@ async function WebRTCVideo(player) {
 
         // restartVideo(event.streams[0])
         // $video = null;
-        fetchRemoteSDP (map.get($webRTCVideo))
+        await fetchRemoteSDP (map.get($webRTCVideo))
 
         __TimerWebRTC = setTimeout(resetWebRTC, timeRefresh)
     }
 
     __TimerWebRTC = setTimeout(resetWebRTC, timeRefresh)
 
-    function fetchRemoteSDP (webRTC) {
-        webRTC.generateOffer(async (sdp) => {
-            let result = await fetch(streamPath, {
-                method: "POST",
-                body: JSON.stringify(sdp),
-                headers: {
-                    'Content-Type': 'application/json;charset=UTF-8'
-                }
-            }).then(res => res.json());
+    async function fetchRemoteSDP (webRTC) {
+        return new Promise((resolve, reject) => {
+            if (webRTC) {
+                webRTC.generateOffer(async (sdp) => {
+                    try {
+                        let result = await fetch(streamPath, {
+                            method: "POST",
+                            body: JSON.stringify(sdp),
+                            headers: {
+                                'Content-Type': 'application/json;charset=UTF-8'
+                            }
+                        }).then(res => res.json());
 
-            if (result.errmsg) {
-                console.error(result.errmsg);
-                return;
+                        if (result.errmsg) {
+                            console.error(result.errmsg);
+                            return;
+                        }
+
+                        await webRTC.pc.setRemoteDescription(new RTCSessionDescription(result));
+                        player.loading = false
+                        resolve(result)
+                        result = null
+                        webRTC = null
+                    } catch (e) {
+                        clearTimeout(webRTC.restartTimer);
+                        webRTC.restartTimer = setTimeout(async () => {
+                            const result = await fetchRemoteSDP (webRTC)
+                            resolve(result)
+                            clearTimeout(webRTC.restartTimer);
+                        }, 1000)
+                    }
+                })
+            } else {
+                reject()
             }
-
-            await webRTC.pc.setRemoteDescription(new RTCSessionDescription(result));
-
-            result = null
-            webRTC = null
         })
     }
 
     map.get($webRTCVideo).pc.ontrack = function(event) {
         ontrack(event, $webRTCVideo)
     }
+
     fetchRemoteSDP (map.get($webRTCVideo))
 }
 

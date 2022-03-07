@@ -25,13 +25,15 @@ export default class Control extends Emitter {
     }
 
     destroy() {
-        if (this.$poster) {
+        const $container = this.player.$container;
+        if (this.$poster && $container.contains(this.$poster)) {
             this.player.$container.removeChild(this.$poster);
         }
-        if (this.$loading) {
+        if (this.$loading && $container.contains(this.$loading)) {
             this.player.$container.removeChild(this.$loading);
         }
-        if (this.$controls) {
+        console.log(this.$controls)
+        if (this.$controls && $container.contains(this.$controls)) {
             this.player.$container.removeChild(this.$controls);
         }
         this.player.debug.log('control', 'destroy');

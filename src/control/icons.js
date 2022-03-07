@@ -48,6 +48,7 @@ const iconsMap = {
         icon: Icon.Video3Disabled({...attrs, style: 'color: red;' + attrs.style}),
         withTips: true,
     },
+    loading: '加载',
     // movement: '云台控制',
     // movementEnable: '云台控制', // 启用
     // transform3D: '3D变换',
@@ -58,9 +59,16 @@ const iconsMap = {
 
 // console.log(Icon)
 export default Object.keys(iconsMap).reduce((icons, key) => {
-    icons[key] = `<div class="jessibuca-icon jessibuca-icon-${key}">${ iconsMap[key].icon }</div>`;
-    if (iconsMap[key].withTips) {
-        icons[key] += `<span class="icon-title-tips"><span class="icon-title">${iconsMap[key].label}</span></span>`;
+    if (key === 'loading') {
+        icons[key] = `<i class="jessibuca-icon jessibuca-icon-${key}">x</i>`;
+        if (iconsMap[key]) {
+            icons[key] += `<span class="icon-title-tips"><span class="icon-title">${iconsMap[key]}</span></span>`;
+        }
+    } else {
+        icons[key] = `<div class="jessibuca-icon jessibuca-icon-${key}">${ iconsMap[key].icon }</div>`;
+        if (iconsMap[key].withTips) {
+            icons[key] += `<span class="icon-title-tips"><span class="icon-title">${iconsMap[key].label}</span></span>`;
+        }
     }
 
     return icons;

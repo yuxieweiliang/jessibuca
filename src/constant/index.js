@@ -21,7 +21,10 @@ export const DEFAULT_PLAYER_OPTIONS = {
     loadingTimeout: 10, // loading timeout
     heartTimeout: 10,  // heart timeout
     timeout: 10, // second
-    timeRefresh: 1000 * 60 * 60, // refresh time
+    // WebRTC 刷新时间
+    webRTCRefreshTime: 1000 * 60 * 60, // refresh time
+    // 断网重连，每隔多少秒重新连接一次。
+    offLineReconnectTime: 1000 * 3,
     supportDblclickFullscreen: false,
     showBandwidth: false, //
     keepScreenOn: false,

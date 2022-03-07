@@ -1,7 +1,7 @@
 import Player from './player';
 import Events from "./utils/events";
-import {DEMUX_TYPE, EVENTS, EVENTS_ERROR, JESSIBUCA_EVENTS, PLAYER_PLAY_PROTOCOL, SCALE_MODE_TYPE} from "./constant";
-import {isEmpty, isNotEmpty, supportWCS, uuid16} from "./utils";
+import {DEMUX_TYPE, EVENTS, EVENTS_ERROR, JESSIBUCA_EVENTS, PLAYER_PLAY_PROTOCOL, SCALE_MODE_TYPE, DEFAULT_PLAYER_OPTIONS} from "./constant";
+import {isEmpty, isNotEmpty, defNumber, supportWCS, uuid16} from "./utils";
 import Emitter from "./utils/emitter";
 
 
@@ -44,6 +44,16 @@ class Jessibuca extends Emitter {
                 _opt.heartTimeout = _opt.timeout
             }
         }
+
+        _opt.timeOffLineReconnect = defNumber(
+            _opt.offLineReconnectTime,
+            DEFAULT_PLAYER_OPTIONS.offLineReconnectTime
+        )
+
+        _opt.webRTCRefreshTime = defNumber(
+            _opt.webRTCRefreshTime,
+            DEFAULT_PLAYER_OPTIONS.webRTCRefreshTime
+        )
 
         this._opt = _opt;
         this.$container = $container;
