@@ -47,17 +47,24 @@ async function WebRTCVideo(player) {
     let __timer = null
     let __TimerWebRTC = null
 
-    webRTCErrorHandle(map.get($webRTCVideo).pc, {
-        connectionStateFailed: () => {
-            player.loading = true
-            resetWebRTC()
-        },
-        framesDroppedFailed: () => {
-            player.loading = true
-            resetWebRTC()
-        },
-    })
+    console.log(player._opt)
 
+    function withError(pc) {
+        webRTCErrorHandle(pc, {
+            connectionStateFailed: () => {
+                player.loading = true
+                resetWebRTC()
+                console.log('-------- webRTCErrorHandle -----------')
+            },
+            framesDroppedFailed: () => {
+                player.loading = true
+                resetWebRTC()
+                console.log('-------- framesDroppedFailed -----------')
+            },
+        })
+    }
+
+    withError(map.get($webRTCVideo).pc)
 
     function ontrack (event, __webRTCVideo) {
         clearTimeout(__timer)
@@ -81,14 +88,17 @@ async function WebRTCVideo(player) {
         // 把上一个卸载了。
         if ($oldVideo) {
             console.log($oldVideo)
-            player.video.destroyVideo($oldVideo)
+            if (player.video && player.video.destroyVideo) {
+                player.video.destroyVideo($oldVideo)
+            }
 
             if (map.has($oldVideo)) {
                 map.get($oldVideo).destroy()
                 map.delete($oldVideo)
-                $oldVideo = $webRTCVideo
             }
         }
+
+        $oldVideo = $webRTCVideo
     }
 
     async function resetWebRTC () {
@@ -104,6 +114,7 @@ async function WebRTCVideo(player) {
 
         clearTimeout(__TimerWebRTC)
 
+        withError(map.get($webRTCVideo).pc)
         map.get($webRTCVideo).pc.ontrack = function(event) {
             ontrack(event, $webRTCVideo)
         }
@@ -132,16 +143,21 @@ async function WebRTCVideo(player) {
 
                         if (result.errmsg) {
                             console.error(result.errmsg);
-                            return;
+                            deleteWebRTC()
+                            player.emit('connectError', {code: 5015, errorMsg: 'stream not found!'});
+                            player.destroy()
+                            map.delete($webRTCVideo)
+                        } else {
+                            await webRTC.pc.setRemoteDescription(new RTCSessionDescription(result));
                         }
 
-                        await webRTC.pc.setRemoteDescription(new RTCSessionDescription(result));
                         player.loading = false
                         resolve(result)
                         result = null
                         webRTC = null
                     } catch (e) {
                         clearTimeout(webRTC.restartTimer);
+                        console.error(e)
                         webRTC.restartTimer = setTimeout(async () => {
                             const result = await fetchRemoteSDP (webRTC)
                             resolve(result)

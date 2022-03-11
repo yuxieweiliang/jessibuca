@@ -231,16 +231,16 @@ export default class VideoLoader extends CommonLoader {
 
     destroyVideo ($oldVideo) {
         if (this.player.$container && $oldVideo) {
-
             // console.log($video.seekable)
-            if ($oldVideo) {
-                // $video.seekable.start($video.seekable.length - 10);
+            // $video.seekable.start($video.seekable.length - 10);
+            if (this.player.$container.contains($oldVideo)) {
                 this.player.$container.removeChild($oldVideo);
-                this.init = false;
-                this.off();
-                this.player.debug.log('Video', 'destroy');
-                $oldVideo = null;
             }
+
+            this.init = false;
+            this.off();
+            this.player.debug.log('Video', 'destroy');
+            $oldVideo = null;
         }
     }
 

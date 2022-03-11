@@ -112,6 +112,7 @@ export const EVENTS = {
     audioInfo: "audioInfo",
     log: 'log',
     error: "error",
+    connectError: "connectError",
     kBps: 'kBps',
     timeout: 'timeout',
     delayTimeout: 'delayTimeout',
@@ -145,13 +146,16 @@ export const EVENTS = {
     playToRenderTimes: 'playToRenderTimes'
 }
 
-
+/**
+ * 对外 开放的事件
+ */
 export const JESSIBUCA_EVENTS = {
     load: EVENTS.load,
     timeUpdate: EVENTS.timeUpdate,
     videoInfo: EVENTS.videoInfo,
     audioInfo: EVENTS.audioInfo,
     error: EVENTS.error,
+    connectError: EVENTS.connectError,
     kBps: EVENTS.kBps,
     log: EVENTS.log,
     start: EVENTS.start,
@@ -184,7 +188,7 @@ export const WEBSOCKET_STATUS = {
     notConnect: 'notConnect',
     open: 'open',
     close: 'close',
-    error: 'error'
+    error: 'error',
 }
 
 export const BUFFER_STATUS = {

@@ -169,7 +169,7 @@ export default function webRTCErrorHandle (peerConnection, callbacks = {}, noop 
             receiveVideoStats.forEach((report) => {
                 // console.log('receiveVideoStats: => ', report)
                 if (report.type === 'track') {
-                    console.log('track:framesDecoded: => ', report.framesDecoded)
+                    // console.log('track:framesDecoded: => ', report.framesDecoded)
                 }
                 if (report.type === 'inbound-rtp') {
                     const { framesDecoded, framesDropped, framesPerSecond, framesReceived } = report
@@ -179,7 +179,7 @@ export default function webRTCErrorHandle (peerConnection, callbacks = {}, noop 
                         }
                         restartLength++
                     }
-                    console.log('inbound-rtp: => ', { framesDecoded, framesDropped, framesPerSecond, framesReceived })
+                    // console.log('inbound-rtp: => ', { framesDecoded, framesDropped, framesPerSecond, framesReceived })
                 }
             })
             // console.log('receiveVideoStats: => ', receiveVideoStats)
@@ -188,10 +188,10 @@ export default function webRTCErrorHandle (peerConnection, callbacks = {}, noop 
         if (rtpVideoSender) {
             const sendVideoStats = await rtpVideoSender.getStats()
             sendVideoStats.forEach((report) => {
-                console.log('sendVideoStats: => ', report)
+                // console.log('sendVideoStats: => ', report)
             })
         }
-        console.log('setInterval')
+        // console.log('setInterval')
     }
     // setInterval(getStats, 6000)
     // setTimeout(getStats, 2000)

@@ -153,6 +153,7 @@
 	  audioInfo: "audioInfo",
 	  log: 'log',
 	  error: "error",
+	  connectError: "connectError",
 	  kBps: 'kBps',
 	  timeout: 'timeout',
 	  delayTimeout: 'delayTimeout',
@@ -185,12 +186,17 @@
 	  videoSyncAudio: 'videoSyncAudio',
 	  playToRenderTimes: 'playToRenderTimes'
 	};
+	/**
+	 * 对外 开放的事件
+	 */
+
 	const JESSIBUCA_EVENTS = {
 	  load: EVENTS.load,
 	  timeUpdate: EVENTS.timeUpdate,
 	  videoInfo: EVENTS.videoInfo,
 	  audioInfo: EVENTS.audioInfo,
 	  error: EVENTS.error,
+	  connectError: EVENTS.connectError,
 	  kBps: EVENTS.kBps,
 	  log: EVENTS.log,
 	  start: EVENTS.start,
@@ -1504,14 +1510,15 @@
 	  destroyVideo($oldVideo) {
 	    if (this.player.$container && $oldVideo) {
 	      // console.log($video.seekable)
-	      if ($oldVideo) {
-	        // $video.seekable.start($video.seekable.length - 10);
+	      // $video.seekable.start($video.seekable.length - 10);
+	      if (this.player.$container.contains($oldVideo)) {
 	        this.player.$container.removeChild($oldVideo);
-	        this.init = false;
-	        this.off();
-	        this.player.debug.log('Video', 'destroy');
-	        $oldVideo = null;
 	      }
+
+	      this.init = false;
+	      this.off();
+	      this.player.debug.log('Video', 'destroy');
+	      $oldVideo = null;
 	    }
 	  }
 
@@ -12182,9 +12189,7 @@ M512 85.333333C276.352 85.333333 85.333333 276.352 85.333333 512s191.018667 426.
 	      const receiveVideoStats = await rtpVideoReceiver.getStats();
 	      receiveVideoStats.forEach(report => {
 	        // console.log('receiveVideoStats: => ', report)
-	        if (report.type === 'track') {
-	          console.log('track:framesDecoded: => ', report.framesDecoded);
-	        }
+	        if (report.type === 'track') ;
 
 	        if (report.type === 'inbound-rtp') {
 	          const {
@@ -12200,26 +12205,18 @@ M512 85.333333C276.352 85.333333 85.333333 276.352 85.333333 512s191.018667 426.
 	            }
 
 	            restartLength++;
-	          }
+	          } // console.log('inbound-rtp: => ', { framesDecoded, framesDropped, framesPerSecond, framesReceived })
 
-	          console.log('inbound-rtp: => ', {
-	            framesDecoded,
-	            framesDropped,
-	            framesPerSecond,
-	            framesReceived
-	          });
 	        }
 	      }); // console.log('receiveVideoStats: => ', receiveVideoStats)
 	    }
 
 	    if (rtpVideoSender) {
 	      const sendVideoStats = await rtpVideoSender.getStats();
-	      sendVideoStats.forEach(report => {
-	        console.log('sendVideoStats: => ', report);
+	      sendVideoStats.forEach(report => {// console.log('sendVideoStats: => ', report)
 	      });
-	    }
+	    } // console.log('setInterval')
 
-	    console.log('setInterval');
 	  } // setInterval(getStats, 6000)
 	  // setTimeout(getStats, 2000)
 
@@ -12331,16 +12328,24 @@ M512 85.333333C276.352 85.333333 85.333333 276.352 85.333333 512s191.018667 426.
 	  map.set($webRTCVideo, new WebRtcPeerRecvOnly());
 	  let __timer = null;
 	  let __TimerWebRTC = null;
-	  webRTCErrorHandle(map.get($webRTCVideo).pc, {
-	    connectionStateFailed: () => {
-	      player.loading = true;
-	      resetWebRTC();
-	    },
-	    framesDroppedFailed: () => {
-	      player.loading = true;
-	      resetWebRTC();
-	    }
-	  });
+	  console.log(player._opt);
+
+	  function withError(pc) {
+	    webRTCErrorHandle(pc, {
+	      connectionStateFailed: () => {
+	        player.loading = true;
+	        resetWebRTC();
+	        console.log('-------- webRTCErrorHandle -----------');
+	      },
+	      framesDroppedFailed: () => {
+	        player.loading = true;
+	        resetWebRTC();
+	        console.log('-------- framesDroppedFailed -----------');
+	      }
+	    });
+	  }
+
+	  withError(map.get($webRTCVideo).pc);
 
 	  function ontrack(event, __webRTCVideo) {
 	    clearTimeout(__timer);
@@ -12364,14 +12369,18 @@ M512 85.333333C276.352 85.333333 85.333333 276.352 85.333333 512s191.018667 426.
 
 	    if ($oldVideo) {
 	      console.log($oldVideo);
-	      player.video.destroyVideo($oldVideo);
+
+	      if (player.video && player.video.destroyVideo) {
+	        player.video.destroyVideo($oldVideo);
+	      }
 
 	      if (map.has($oldVideo)) {
 	        map.get($oldVideo).destroy();
 	        map.delete($oldVideo);
-	        $oldVideo = $webRTCVideo;
 	      }
 	    }
+
+	    $oldVideo = $webRTCVideo;
 	  }
 
 	  async function resetWebRTC() {
@@ -12384,6 +12393,7 @@ M512 85.333333C276.352 85.333333 85.333333 276.352 85.333333 512s191.018667 426.
 
 	    map.set($webRTCVideo, new WebRtcPeerRecvOnly());
 	    clearTimeout(__TimerWebRTC);
+	    withError(map.get($webRTCVideo).pc);
 
 	    map.get($webRTCVideo).pc.ontrack = function (event) {
 	      ontrack(event, $webRTCVideo);
@@ -12412,16 +12422,24 @@ M512 85.333333C276.352 85.333333 85.333333 276.352 85.333333 512s191.018667 426.
 
 	            if (result.errmsg) {
 	              console.error(result.errmsg);
-	              return;
+	              deleteWebRTC();
+	              player.emit('connectError', {
+	                code: 5015,
+	                errorMsg: 'stream not found!'
+	              });
+	              player.destroy();
+	              map.delete($webRTCVideo);
+	            } else {
+	              await webRTC.pc.setRemoteDescription(new RTCSessionDescription(result));
 	            }
 
-	            await webRTC.pc.setRemoteDescription(new RTCSessionDescription(result));
 	            player.loading = false;
 	            resolve(result);
 	            result = null;
 	            webRTC = null;
 	          } catch (e) {
 	            clearTimeout(webRTC.restartTimer);
+	            console.error(e);
 	            webRTC.restartTimer = setTimeout(async () => {
 	              const result = await fetchRemoteSDP(webRTC);
 	              resolve(result);
