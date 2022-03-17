@@ -9470,7 +9470,8 @@
 	    this.hasInit = false;
 	    this.isInitInfo = false;
 	    this.cacheTrack = {};
-	    this.timeInit = false;
+	    this.timeInit = false; // 序列号
+
 	    this.sequenceNumber = 0;
 	    this.mediaSourceOpen = false;
 	    this.bufferList = [];

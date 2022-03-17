@@ -16,6 +16,7 @@ export default class MseDecoder extends Emitter {
         this.isInitInfo = false;
         this.cacheTrack = {};
         this.timeInit = false;
+        // 序列号
         this.sequenceNumber = 0;
         this.mediaSourceOpen = false;
         this.bufferList = [];
