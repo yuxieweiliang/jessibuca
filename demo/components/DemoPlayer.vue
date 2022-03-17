@@ -122,6 +122,7 @@ export default {
             loaded: false, // mute
             showOperateBtns: false,
             showBandwidth: false,
+            hotKey: true,
             err: "",
             speed: 0,
             performance: "",
@@ -165,8 +166,12 @@ export default {
                         // hasAudio:false,
                         debug: false,
 <<<<<<< HEAD
+<<<<<<< HEAD
                         useWebRTC: true,
 =======
+=======
+                        hotKey:true,
+>>>>>>> 656aa192e9fe60595914f4916c98cd503f07be87
                         // hasAudio:false,
 >>>>>>> 81e1e628249c388fcbfede66d602ef99d81a8b36
                         supportDblclickFullscreen: true,

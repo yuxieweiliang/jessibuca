@@ -10,7 +10,21 @@ options 支持的参数有：
 
 播放器容器。
 
-> 若为 string ，则底层调用的是 document.getElementById('id')
+> 若为 string ，则底层调用的是 document.querySelector(container)
+
+源码
+```js
+
+let $container = options.container;
+if (typeof options.container === 'string') {
+    $container = document.querySelector(options.container);
+}
+if (!$container) {
+    throw new Error('Jessibuca need container option');
+    return;
+}
+```
+
 
 ### videoBuffer
 - **类型**：`number`
@@ -194,6 +208,15 @@ worker地址
 > 视频编码只支持H.264视频 (需在chrome 94版本以上，需要https或者localhost环境)
 
 > 支持 forceNoOffscreen 为 false （开启离屏渲染）
+
+
+### hotKey
+- **类型**：`boolean`
+- **默认值**：`false`
+- **用法**：
+  是否开启键盘快捷键
+
+> 目前支持的键盘快捷键有：esc -> 退出全屏；arrowUp -> 声音增加；arrowDown -> 声音减少；
 
 ## 方法
 
