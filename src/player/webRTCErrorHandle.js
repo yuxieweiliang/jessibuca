@@ -3,6 +3,7 @@ export default function webRTCErrorHandle (peerConnection, callbacks = {}, noop 
         iceCandidateError = noop,
         connectionStateFailed = noop,
         iceConnectionStateFailed = noop,
+        framesDroppedFailed = noop,
     } = callbacks;
     /**
      * 当 ICE 候选人收集过程中发生错误时，将触发此事件。
@@ -149,4 +150,50 @@ export default function webRTCErrorHandle (peerConnection, callbacks = {}, noop 
         console.debug('signaling: => ' + JSON.stringify(signalingState, null, 2));
     });
 
+
+    // 获取数据统计
+    let restartLength = 0;
+
+    async function getStats () {
+        peerConnection.getStats(null).then((statsReport) => {
+            statsReport.forEach((report) => {
+                // console.log('statsReport: => ', report)
+            })
+        })
+
+        const rtpVideoReceiver = peerConnection.getReceivers().find(receive => receive.track && receive.track.kind === 'video')
+        const rtpVideoSender = peerConnection.getSenders().find(receive => receive.track && receive.track.kind === 'video')
+
+        if (rtpVideoReceiver) {
+            const receiveVideoStats = await rtpVideoReceiver.getStats()
+            receiveVideoStats.forEach((report) => {
+                // console.log('receiveVideoStats: => ', report)
+                if (report.type === 'track') {
+                    // console.log('track:framesDecoded: => ', report.framesDecoded)
+                }
+                if (report.type === 'inbound-rtp') {
+                    const { framesDecoded, framesDropped, framesPerSecond, framesReceived } = report
+                    if (!framesPerSecond) {
+                        if (restartLength > 6) {
+                            framesDroppedFailed()
+                        }
+                        restartLength++
+                    }
+                    // console.log('inbound-rtp: => ', { framesDecoded, framesDropped, framesPerSecond, framesReceived })
+                }
+            })
+            // console.log('receiveVideoStats: => ', receiveVideoStats)
+        }
+
+        if (rtpVideoSender) {
+            const sendVideoStats = await rtpVideoSender.getStats()
+            sendVideoStats.forEach((report) => {
+                // console.log('sendVideoStats: => ', report)
+            })
+        }
+        // console.log('setInterval')
+    }
+    // setInterval(getStats, 6000)
+    // setTimeout(getStats, 2000)
+    setInterval(getStats, 1000)
 }

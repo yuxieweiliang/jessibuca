@@ -348,4 +348,32 @@ export function isNotEmpty(value) {
     return !isEmpty(value)
 }
 
+export function defNumber(value, initial) {
+    if (isNotEmpty(value) && typeof value === "number" && typeof +value === "number") {
+        if (initial && initial > value) {
+            return initial
+        }
+        return value
+    } else {
+        return initial
+    }
+}
 
+export function initPlayTimes() {
+    return {
+        playInitStart: '', //1
+        playStart: '', // 2
+        streamStart: '', //3
+        streamResponse: '', // 4
+        demuxStart: '', // 5
+        decodeStart: '', // 6
+        videoStart: '', // 7
+        playTimestamp: '',// playStart- playInitStart
+        streamTimestamp: '',// streamStart - playStart
+        streamResponseTimestamp: '',// streamResponse - streamStart
+        demuxTimestamp: '', // demuxStart - streamResponse
+        decodeTimestamp: '', // decodeStart - demuxStart
+        videoTimestamp: '',// videoStart - decodeStart
+        allTimestamp: '' // videoStart - playInitStart
+    }
+}

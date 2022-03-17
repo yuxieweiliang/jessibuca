@@ -3,6 +3,7 @@ import {EVENTS, EVENTS_ERROR, FRAG_DURATION, MEDIA_SOURCE_STATE, MP4_CODECS, VID
 import MP4 from "../remux/fmp4-generator";
 import {parseAVCDecoderConfigurationRecord} from "../utils/h264";
 import {parseHEVCDecoderConfigurationRecord} from "../utils/h265";
+import {now} from "../utils";
 
 export default class MseDecoder extends Emitter {
     constructor(player) {
@@ -15,6 +16,7 @@ export default class MseDecoder extends Emitter {
         this.isInitInfo = false;
         this.cacheTrack = {};
         this.timeInit = false;
+        // 序列号
         this.sequenceNumber = 0;
         this.mediaSourceOpen = false;
         this.bufferList = [];
@@ -36,6 +38,21 @@ export default class MseDecoder extends Emitter {
         })
 
         player.debug.log('MediaSource', 'init')
+    }
+
+    destroy() {
+        this.stop();
+        this.bufferList = [];
+        this.mediaSource = null;
+        this.mediaSourceOpen = false;
+        this.sourceBuffer = null;
+        this.hasInit = false;
+        this.isInitInfo = false;
+        this.sequenceNumber = 0;
+        this.cacheTrack = null;
+        this.timeInit = false;
+        this.off();
+        this.player.debug.log('MediaSource', 'destroy')
     }
 
     get state() {
@@ -76,6 +93,9 @@ export default class MseDecoder extends Emitter {
                 if (videoCodec === VIDEO_ENC_CODE.h265) {
                     this.emit(EVENTS_ERROR.mediaSourceH265NotSupport)
                     return;
+                }
+                if (!player._times.decodeStart) {
+                    player._times.decodeStart = now();
                 }
 
                 this._decodeConfigurationRecord(payload, ts, isIframe, videoCodec)
@@ -164,6 +184,10 @@ export default class MseDecoder extends Emitter {
             }
             player.handleRender();
             player.updateStats({fps: true, ts: ts, buf: player.demux.delay})
+            if (!player._times.videoStart) {
+                player._times.videoStart = now();
+                player.handlePlayToRenderTimes()
+            }
         } else {
             player.debug.log('MediaSource', 'timeInit set false , cacheTrack = {}');
             this.timeInit = false;
@@ -222,7 +246,11 @@ export default class MseDecoder extends Emitter {
         }
 
         if (this.sourceBuffer.updating === false && this.isStateOpen) {
-            this.sourceBuffer.appendBuffer(buffer);
+            try {
+                this.sourceBuffer.appendBuffer(buffer);
+            } catch (e) {
+                console.error(e)
+            }
             return;
         }
 
@@ -276,18 +304,5 @@ export default class MseDecoder extends Emitter {
         }
     }
 
-    destroy() {
-        this.stop();
-        this.bufferList = [];
-        this.mediaSource = null;
-        this.mediaSourceOpen = false;
-        this.sourceBuffer = null;
-        this.hasInit = false;
-        this.isInitInfo = false;
-        this.sequenceNumber = 0;
-        this.cacheTrack = null;
-        this.timeInit = false;
-        this.off();
-        this.player.debug.log('MediaSource', 'destroy')
-    }
+
 }

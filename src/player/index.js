@@ -3,7 +3,17 @@ import Debug from "../utils/debug";
 import Events from "../utils/events";
 import property from './property';
 import events from './events';
-import {fpsStatus, isEmpty, isFullScreen, isNotEmpty, now, supportMSE, supportOffscreenV2, supportWCS} from "../utils";
+import {
+    fpsStatus,
+    initPlayTimes,
+    isEmpty,
+    isFullScreen,
+    isNotEmpty,
+    now,
+    supportMSE,
+    supportOffscreenV2,
+    supportWCS
+} from "../utils";
 import Video from "../video";
 import Audio from "../audio";
 import Stream from "../stream";
@@ -82,6 +92,9 @@ export default class Player extends Emitter {
             ts: 0 // 当前视频帧pts，单位毫秒
         }
 
+        // 各个步骤的时间统计
+        this._times = initPlayTimes();
+
         //
         this._videoTimestamp = 0;
         this._audioTimestamp = 0;
@@ -138,6 +151,81 @@ export default class Player extends Emitter {
     }
 
 
+    destroy() {
+        this._loading = false;
+        this._playing = false;
+        this._hasLoaded = false;
+
+        this._times = initPlayTimes();
+
+        if (this.decoderWorker) {
+            this.decoderWorker.destroy();
+            this.decoderWorker = null;
+        }
+        if (this.video) {
+            this.video.destroy();
+            this.video = null;
+        }
+
+        if (this.audio) {
+            this.audio.destroy();
+            this.audio = null;
+        }
+
+        if (this.stream) {
+            this.stream.destroy();
+            this.stream = null;
+        }
+
+        if (this.recorder) {
+            this.recorder.destroy();
+            this.recorder = null;
+        }
+
+        if (this.control) {
+            this.control.destroy();
+            this.control = null;
+        }
+
+        if (this.webcodecsDecoder) {
+            this.webcodecsDecoder.destroy();
+            this.webcodecsDecoder = null;
+        }
+
+        if (this.mseDecoder) {
+            this.mseDecoder.destroy();
+            this.mseDecoder = null;
+        }
+
+        if (this.demux) {
+            this.demux.destroy();
+            this.demux = null;
+        }
+
+
+        if (this.events) {
+            this.events.destroy();
+            this.events = null;
+        }
+
+        this.clearCheckHeartTimeout();
+        this.clearCheckLoadingTimeout();
+        //
+        this.releaseWakeLock();
+        this.keepScreenOn = null;
+        // reset stats
+        this.resetStats();
+        this._audioTimestamp = 0;
+        this._videoTimestamp = 0;
+
+        // 其他没法解耦的，通过 destroy 方式
+        this.emit('destroy');
+        // 接触所有绑定事件
+        this.off();
+
+        this.debug.log('play', 'destroy end');
+    }
+
     set fullscreen(value) {
         this.emit(EVENTS.fullscreen, value);
     }
@@ -185,7 +273,7 @@ export default class Player extends Emitter {
     }
 
     get volume() {
-        return this.audio.volume;
+        return this.audio && this.audio.volume;
     }
 
     set volume(value) {
@@ -214,7 +302,7 @@ export default class Player extends Emitter {
     }
 
     get recording() {
-        return this.recorder.recording;
+        return this.recorder && this.recorder.recording;
     }
 
     set audioTimestamp(value) {
@@ -312,6 +400,7 @@ export default class Player extends Emitter {
 
             this.loading = true;
             this.playing = false;
+            this._times.playInitStart = now();
             if (!url) {
                 url = this._opt.url;
             }
@@ -319,19 +408,21 @@ export default class Player extends Emitter {
 
             this.clearCheckHeartTimeout();
 
-            // console.log('useWebRTC', this)
-
             // 使用WebRTC
             if (this._opt.useWebRTC) {
                 // 不静音
-                if (this._opt.isNotMute) {
-                    this.mute(false);
-                }
-
-                useWebRTC(this);
-            } else {
-
                 this.init().then(() => {
+                    this._times.playStart = now();
+                    //
+                    if (this._opt.isNotMute) {
+                        this.mute(false);
+                    }
+
+                    useWebRTC(this);
+                })
+            } else {
+                this.init().then(() => {
+                    this._times.playStart = now();
                     //
                     if (this._opt.isNotMute) {
                         this.mute(false);
@@ -371,6 +462,7 @@ export default class Player extends Emitter {
                     // success
                     this.stream.once(EVENTS.streamSuccess, () => {
                         resolve();
+                        this._times.streamResponse = now();
                         //
                         if (this._opt.useMSE) {
                             this.video.play();
@@ -381,7 +473,6 @@ export default class Player extends Emitter {
                     reject(e)
                 })
             }
-
         })
     }
 
@@ -441,6 +532,8 @@ export default class Player extends Emitter {
             //
             this._audioTimestamp = 0;
             this._videoTimestamp = 0;
+            //
+            this._times = initPlayTimes();
             //
             setTimeout(() => {
                 resolve()
@@ -633,78 +726,15 @@ export default class Player extends Emitter {
         }
     }
 
-    destroy() {
-        this._loading = false;
-        this._playing = false;
-        this._hasLoaded = false;
-
-
-        if (this.decoderWorker) {
-            this.decoderWorker.destroy();
-            this.decoderWorker = null;
-        }
-        if (this.video) {
-            this.video.destroy();
-            this.video = null;
-        }
-
-        if (this.audio) {
-            this.audio.destroy();
-            this.audio = null;
-        }
-
-        if (this.stream) {
-            this.stream.destroy();
-            this.stream = null;
-        }
-
-        if (this.recorder) {
-            this.recorder.destroy();
-            this.recorder = null;
-        }
-
-        if (this.control) {
-            this.control.destroy();
-            this.control = null;
-        }
-
-        if (this.webcodecsDecoder) {
-            this.webcodecsDecoder.destroy();
-            this.webcodecsDecoder = null;
-        }
-
-        if (this.mseDecoder) {
-            this.mseDecoder.destroy();
-            this.mseDecoder = null;
-        }
-
-        if (this.demux) {
-            this.demux.destroy();
-            this.demux = null;
-        }
-
-
-        if (this.events) {
-            this.events.destroy();
-            this.events = null;
-        }
-
-        this.clearCheckHeartTimeout();
-        this.clearCheckLoadingTimeout();
-        //
-        this.releaseWakeLock();
-        this.keepScreenOn = null;
-        // reset stats
-        this.resetStats();
-        this._audioTimestamp = 0;
-        this._videoTimestamp = 0;
-
-        // 其他没法解耦的，通过 destroy 方式
-        this.emit('destroy');
-        // 接触所有绑定事件
-        this.off();
-
-        this.debug.log('play', 'destroy end');
+    handlePlayToRenderTimes() {
+        const _times = this._times;
+        _times.playTimestamp = _times.playStart - _times.playInitStart;
+        _times.streamTimestamp = _times.streamStart - _times.playStart;
+        _times.streamResponseTimestamp = _times.streamResponse - _times.streamStart;
+        _times.demuxTimestamp = _times.demuxStart - _times.streamResponse;
+        _times.decodeTimestamp = _times.decodeStart - _times.demuxStart;
+        _times.videoTimestamp = _times.videoStart - _times.decodeStart;
+        _times.allTimestamp = _times.videoStart - _times.playInitStart;
+        this.emit(EVENTS.playToRenderTimes, _times);
     }
-
 }

@@ -17,10 +17,14 @@ export const DEFAULT_PLAYER_OPTIONS = {
     isFullResize: false, //
     isFlv: false,
     debug: false,
+    hotKey: false, // 快捷键
     loadingTimeout: 10, // loading timeout
     heartTimeout: 10,  // heart timeout
     timeout: 10, // second
-    timeRefresh: 1000 * 60 * 60, // refresh time
+    // WebRTC 刷新时间
+    webRTCRefreshTime: 1000 * 60 * 60, // refresh time
+    // 断网重连，每隔多少秒重新连接一次。
+    offLineReconnectTime: 1000 * 3,
     supportDblclickFullscreen: false,
     showBandwidth: false, //
     keepScreenOn: false,
@@ -108,6 +112,7 @@ export const EVENTS = {
     audioInfo: "audioInfo",
     log: 'log',
     error: "error",
+    connectError: "connectError",
     kBps: 'kBps',
     timeout: 'timeout',
     delayTimeout: 'delayTimeout',
@@ -138,15 +143,19 @@ export const EVENTS = {
     videoWaiting: 'videoWaiting',
     videoTimeUpdate: 'videoTimeUpdate',
     videoSyncAudio: 'videoSyncAudio',
+    playToRenderTimes: 'playToRenderTimes'
 }
 
-
+/**
+ * 对外 开放的事件
+ */
 export const JESSIBUCA_EVENTS = {
     load: EVENTS.load,
     timeUpdate: EVENTS.timeUpdate,
     videoInfo: EVENTS.videoInfo,
     audioInfo: EVENTS.audioInfo,
     error: EVENTS.error,
+    connectError: EVENTS.connectError,
     kBps: EVENTS.kBps,
     log: EVENTS.log,
     start: EVENTS.start,
@@ -161,7 +170,8 @@ export const JESSIBUCA_EVENTS = {
     performance: EVENTS.performance,
     recordingTimestamp: EVENTS.recordingTimestamp,
     recordStart: EVENTS.recordStart,
-    recordEnd: EVENTS.recordEnd
+    recordEnd: EVENTS.recordEnd,
+    playToRenderTimes: EVENTS.playToRenderTimes
 }
 
 export const EVENTS_ERROR = {
@@ -178,7 +188,7 @@ export const WEBSOCKET_STATUS = {
     notConnect: 'notConnect',
     open: 'open',
     close: 'close',
-    error: 'error'
+    error: 'error',
 }
 
 export const BUFFER_STATUS = {
@@ -263,4 +273,11 @@ export const MEDIA_SOURCE_STATE = {
 export const FRAG_DURATION = Math.ceil(1000 / 25)
 
 
-export const AUDIO_SYNC_VIDEO_DIFF = 200;
+export const AUDIO_SYNC_VIDEO_DIFF = 1000;
+
+
+export const HOT_KEY = {
+    esc: 27, //
+    arrowUp: 38, //
+    arrowDown: 40, //
+}

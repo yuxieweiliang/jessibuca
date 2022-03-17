@@ -1,9 +1,8 @@
 import Player from './player';
 import Events from "./utils/events";
-import {DEMUX_TYPE, EVENTS, EVENTS_ERROR, JESSIBUCA_EVENTS, PLAYER_PLAY_PROTOCOL, SCALE_MODE_TYPE} from "./constant";
-import {isEmpty, isNotEmpty, supportWCS, uuid16} from "./utils";
+import {DEMUX_TYPE, EVENTS, EVENTS_ERROR, JESSIBUCA_EVENTS, PLAYER_PLAY_PROTOCOL, SCALE_MODE_TYPE, DEFAULT_PLAYER_OPTIONS} from "./constant";
+import {isEmpty, isNotEmpty, defNumber, supportWCS, uuid16} from "./utils";
 import Emitter from "./utils/emitter";
-import Aegis from "aegis-web-sdk";
 
 
 class Jessibuca extends Emitter {
@@ -46,23 +45,39 @@ class Jessibuca extends Emitter {
             }
         }
 
+        _opt.timeOffLineReconnect = defNumber(
+            _opt.offLineReconnectTime,
+            DEFAULT_PLAYER_OPTIONS.offLineReconnectTime
+        )
+
+        _opt.webRTCRefreshTime = defNumber(
+            _opt.webRTCRefreshTime,
+            DEFAULT_PLAYER_OPTIONS.webRTCRefreshTime
+        )
+
         this._opt = _opt;
         this.$container = $container;
         this.href = null;
         this.events = new Events(this);
         this.player = new Player($container, _opt);
         this._bindEvents();
-        this._initAegis();
     }
 
-    _initAegis() {
-        /*const aegis = new Aegis({
+    /*_initAegis() {
+        const aegis = new Aegis({
             id: '3ogWGfLmpllRGka9pY', // 上报 id
             // uin: uuid16(), // 用户唯一 ID（可选）
             reportApiSpeed: false, // 接口测速
             reportAssetSpeed: false, // 静态资源测速
             spa: false // spa 应用页面跳转的时候开启 pv 计算
-        });*/
+    });*/
+    /**
+     *
+     */
+    destroy() {
+        this.player.destroy();
+        this.player = null;
+        this.off();
     }
 
     _bindEvents() {
@@ -412,14 +427,7 @@ class Jessibuca extends Emitter {
         return this.player.recorder.recording;
     }
 
-    /**
-     *
-     */
-    destroy() {
-        this.player.destroy();
-        this.player = null;
-        this.off();
-    }
+
 }
 
 
