@@ -5,6 +5,8 @@ import {parseAVCDecoderConfigurationRecord} from "../utils/h264";
 import {parseHEVCDecoderConfigurationRecord} from "../utils/h265";
 import {now} from "../utils";
 
+
+var length = {}
 export default class MseDecoder extends Emitter {
     constructor(player) {
         super();
@@ -194,6 +196,10 @@ export default class MseDecoder extends Emitter {
             this.cacheTrack = {};
         }
 
+        if (!this.cacheTrack) {
+            this.cacheTrack = {}
+        }
+
         this.cacheTrack.id = 1;
         this.cacheTrack.sequenceNumber = ++this.sequenceNumber;
         this.cacheTrack.size = bytes;
@@ -226,9 +232,18 @@ export default class MseDecoder extends Emitter {
             player.video.initCanvasViewSize();
             this.isInitInfo = true;
         }
+
+        if (ts % 10000 === 0) {
+            length[ts] = (length[ts] || 0) + 1
+            console.log(ts, length)
+        }
+
+        if (ts > 60 * 1000) {
+            this.player.replay()
+        }
     }
 
-    appendBuffer(buffer) {
+    async appendBuffer(buffer) {
         const {
             debug,
             events: {proxy},
@@ -246,11 +261,24 @@ export default class MseDecoder extends Emitter {
             })
         }
 
+        // 上一块数据还在添加中
+        if (this.sourceBuffer.updating) {
+            return
+        }
+
         if (this.sourceBuffer.updating === false && this.isStateOpen) {
+            // proxy(this.sourceBuffer, 'updateend', (_) => {
+            //     // this.mediaSource.endOfStream();
+            //     // $video.play()
+            //     // console.log('updateend')
+            // })
             try {
                 this.sourceBuffer.appendBuffer(buffer);
-            } catch (e) {
-                console.error(e)
+            } catch (error) {
+                // console.error('error: => ', error)
+                console.error('error: => sourceBuffer => appendBuffer')
+                // this.dropSourceBuffer(true)
+                this.player.replay()
             }
             return;
         }

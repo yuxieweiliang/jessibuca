@@ -1491,7 +1491,7 @@
 	    return new VideoLoader(player);
 	  }
 
-	  resetVideo(cb) {
+	  resetVideo() {
 	    if (this.player.$container && this.player.$container.$videoElement) {
 	      let $video = this.player.$container.$videoElement; // console.log($video.seekable)
 
@@ -1917,6 +1917,7 @@
 
 	}
 
+	const socketWeakMap = new WeakMap();
 	class WebsocketLoader extends Emitter {
 	  constructor(player) {
 	    super();
@@ -1931,9 +1932,12 @@
 	  }
 
 	  destroy() {
-	    if (this.socket) {
-	      this.socket.close();
-	      this.socket = null;
+	    let socket = socketWeakMap.get(this.player.stream);
+
+	    if (socket) {
+	      socketWeakMap.delete(this.player.stream);
+	      socket.close();
+	      socket = null;
 	    }
 
 	    this.socketStatus = WEBSOCKET_STATUS.notConnect;
@@ -1952,24 +1956,27 @@
 	      },
 	      demux
 	    } = player;
-	    this.socket = new WebSocket(this.wsUrl);
-	    this.socket.binaryType = 'arraybuffer';
-	    proxy(this.socket, 'open', () => {
+	    const socket = new WebSocket(this.wsUrl);
+	    socketWeakMap.set(this.player.stream, socket);
+	    socket.binaryType = 'arraybuffer';
+	    proxy(socket, 'open', () => {
 	      this.emit(EVENTS.streamSuccess);
 	      debug.log('websocketLoader', 'socket open');
 	      this.socketStatus = WEBSOCKET_STATUS.open;
 	    });
-	    proxy(this.socket, 'message', event => {
+	    proxy(socket, 'message', event => {
 	      this.streamRate && this.streamRate(event.data.byteLength);
 
 	      this._handleMessage(event.data);
 	    });
-	    proxy(this.socket, 'close', () => {
+	    proxy(socket, 'close', () => {
 	      debug.log('websocketLoader', 'socket close');
 	      this.emit(EVENTS.streamEnd);
 	      this.socketStatus = WEBSOCKET_STATUS.close;
+	      this.destroy();
+	      player.replay();
 	    });
-	    proxy(this.socket, 'error', error => {
+	    proxy(socket, 'error', error => {
 	      debug.log('websocketLoader', 'socket error');
 	      this.emit(EVENTS_ERROR.websocketError, error);
 	      this.player.emit(EVENTS.error, EVENTS_ERROR.websocketError);
@@ -1997,7 +2004,7 @@
 	    this.player._times.streamStart = now();
 	    this.wsUrl = url;
 
-	    this._createWebSocket();
+	    this._createWebSocket(url);
 	  }
 
 	}
@@ -9460,6 +9467,7 @@
 	  return meta;
 	}
 
+	var length = {};
 	class MseDecoder extends Emitter {
 	  constructor(player) {
 	    super();
@@ -9657,6 +9665,10 @@
 	      this.cacheTrack = {};
 	    }
 
+	    if (!this.cacheTrack) {
+	      this.cacheTrack = {};
+	    }
+
 	    this.cacheTrack.id = 1;
 	    this.cacheTrack.sequenceNumber = ++this.sequenceNumber;
 	    this.cacheTrack.size = bytes;
@@ -9688,9 +9700,18 @@
 	      player.video.initCanvasViewSize();
 	      this.isInitInfo = true;
 	    }
+
+	    if (ts % 10000 === 0) {
+	      length[ts] = (length[ts] || 0) + 1;
+	      console.log(ts, length);
+	    }
+
+	    if (ts > 60 * 1000) {
+	      this.player.replay();
+	    }
 	  }
 
-	  appendBuffer(buffer) {
+	  async appendBuffer(buffer) {
 	    const {
 	      debug,
 	      events: {
@@ -9708,13 +9729,26 @@
 	        this.player.emit(EVENTS.mseSourceBufferError, error);
 	        this.dropSourceBuffer(true);
 	      });
+	    } // 上一块数据还在添加中
+
+
+	    if (this.sourceBuffer.updating) {
+	      return;
 	    }
 
 	    if (this.sourceBuffer.updating === false && this.isStateOpen) {
+	      // proxy(this.sourceBuffer, 'updateend', (_) => {
+	      //     // this.mediaSource.endOfStream();
+	      //     // $video.play()
+	      //     // console.log('updateend')
+	      // })
 	      try {
 	        this.sourceBuffer.appendBuffer(buffer);
-	      } catch (e) {
-	        console.error(e);
+	      } catch (error) {
+	        // console.error('error: => ', error)
+	        console.error('error: => sourceBuffer => appendBuffer'); // this.dropSourceBuffer(true)
+
+	        this.player.replay();
 	      }
 
 	      return;
@@ -10020,7 +10054,7 @@
 	    this.player.debug.log('common dumex', `init Interval`);
 
 	    let _loop = () => {
-	      let data;
+	      let data; // console.log(videoBuffer, this.delay)
 
 	      if (this.bufferList.length) {
 	        if (this.dropping) {
@@ -10288,6 +10322,7 @@
 
 	    switch (type) {
 	      case MEDIA_TYPE.audio:
+	        // MEDIA_TYPE.audio === 1
 	        if (player._opt.hasAudio) {
 	          const payload = new Uint8Array(data, 5);
 	          player.updateStats({
@@ -10302,12 +10337,14 @@
 	        break;
 
 	      case MEDIA_TYPE.video:
+	        // MEDIA_TYPE.audio === 2
 	        if (player._opt.hasVideo) {
 	          if (!player._times.demuxStart) {
 	            player._times.demuxStart = now();
 	          }
 
 	          if (dv.byteLength > 5) {
+	            // 8位无符号整型数组
 	            const payload = new Uint8Array(data, 5);
 	            const isIframe = dv.getUint8(5) >> 4 === 1;
 	            player.updateStats({
@@ -10315,7 +10352,17 @@
 	            });
 
 	            if (payload.byteLength > 0) {
+	              /**
+	               * payload 当前帧的数据
+	               * type video | audio
+	               * ts 每次 +30
+	               * isIframe true | false
+	               */
 	              this._doDecode(payload, type, ts, isIframe);
+
+	              if (dv && dv.slice) {
+	                dv.slice(dv.byteLength);
+	              }
 	            }
 	          }
 	        }
@@ -12542,8 +12589,12 @@ M512 85.333333C276.352 85.333333 85.333333 276.352 85.333333 512s191.018667 426.
 	        this.webcodecsDecoder = new WebcodecsDecoder(this);
 	      }
 
-	      if (this._opt.useMSE) {
-	        this.mseDecoder = new MseDecoder(this);
+	      try {
+	        if (this._opt.useMSE) {
+	          this.mseDecoder = new MseDecoder(this);
+	        }
+	      } catch (error) {
+	        console.log(error);
 	      }
 	    } //
 
@@ -12578,6 +12629,11 @@ M512 85.333333C276.352 85.333333 85.333333 276.352 85.333333 512s191.018667 426.
 	    this._hasLoaded = false;
 	    this._times = initPlayTimes();
 
+	    if (this.stream) {
+	      this.stream.destroy();
+	      this.stream = null;
+	    }
+
 	    if (this.decoderWorker) {
 	      this.decoderWorker.destroy();
 	      this.decoderWorker = null;
@@ -12591,11 +12647,6 @@ M512 85.333333C276.352 85.333333 85.333333 276.352 85.333333 512s191.018667 426.
 	    if (this.audio) {
 	      this.audio.destroy();
 	      this.audio = null;
-	    }
-
-	    if (this.stream) {
-	      this.stream.destroy();
-	      this.stream = null;
 	    }
 
 	    if (this.recorder) {
@@ -12804,6 +12855,37 @@ M512 85.333333C276.352 85.333333 85.333333 276.352 85.333333 512s191.018667 426.
 	      }
 	    });
 	  }
+
+	  replay() {
+	    try {
+	      this.video.resetVideo();
+
+	      if (this.stream) {
+	        this.stream.destroy();
+	        this.stream = null;
+	      }
+
+	      if (this.decoderWorker) {
+	        this.decoderWorker.destroy();
+	        this.decoderWorker = null;
+	        this.decoderWorker = new DecoderWorker(this);
+	      }
+
+	      if (this.demux) {
+	        this.demux.destroy();
+	        this.demux = null;
+	      }
+
+	      if (this.mseDecoder) {
+	        this.mseDecoder.destroy();
+	        this.mseDecoder = null;
+	      }
+
+	      this.play(this._opt.url);
+	    } catch (e) {
+	      console.error(e);
+	    }
+	  }
 	  /**
 	   *
 	   * @param url
@@ -12862,26 +12944,33 @@ M512 85.333333C276.352 85.333333 85.333333 276.352 85.333333 512s191.018667 426.
 	          }
 
 	          this.enableWakeLock();
-	          this.stream.fetchStream(url); //
 
-	          this.checkLoadingTimeout(); // fetch error
+	          if (this.stream) {
+	            this.stream.fetchStream(url);
+	          } //
 
-	          this.stream.once(EVENTS_ERROR.fetchError, error => {
-	            reject(error);
-	          }); // ws
 
-	          this.stream.once(EVENTS_ERROR.websocketError, error => {
-	            reject(error);
-	          }); // success
+	          this.checkLoadingTimeout();
 
-	          this.stream.once(EVENTS.streamSuccess, () => {
-	            resolve();
-	            this._times.streamResponse = now(); //
+	          if (this.stream) {
+	            // fetch error
+	            this.stream.once(EVENTS_ERROR.fetchError, error => {
+	              reject(error);
+	            }); // ws
 
-	            if (this._opt.useMSE) {
-	              this.video.play();
-	            }
-	          });
+	            this.stream.once(EVENTS_ERROR.websocketError, error => {
+	              reject(error);
+	            }); // success
+
+	            this.stream.once(EVENTS.streamSuccess, () => {
+	              resolve();
+	              this._times.streamResponse = now(); //
+
+	              if (this._opt.useMSE) {
+	                this.video.play();
+	              }
+	            });
+	          }
 	        }).catch(e => {
 	          reject(e);
 	        });

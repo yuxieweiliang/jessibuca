@@ -212,7 +212,7 @@ export default class VideoLoader extends CommonLoader {
         return new VideoLoader(player)
     }
 
-    resetVideo (cb) {
+    resetVideo () {
         if (this.player.$container && this.player.$container.$videoElement) {
             let $video = this.player.$container.$videoElement
 

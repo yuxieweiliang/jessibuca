@@ -2,6 +2,8 @@ import Emitter from "../utils/emitter";
 import {EVENTS, EVENTS_ERROR, WEBSOCKET_STATUS} from "../constant";
 import {calculationRate, now} from "../utils";
 
+const socketWeakMap = new WeakMap();
+
 export default class WebsocketLoader extends Emitter {
     constructor(player) {
         super();
@@ -16,9 +18,12 @@ export default class WebsocketLoader extends Emitter {
     }
 
     destroy() {
-        if (this.socket) {
-            this.socket.close();
-            this.socket = null;
+        let socket = socketWeakMap.get(this.player.stream);
+
+        if (socket) {
+            socketWeakMap.delete(this.player.stream);
+            socket.close();
+            socket = null;
         }
         this.socketStatus = WEBSOCKET_STATUS.notConnect;
         this.streamRate = null;
@@ -34,28 +39,31 @@ export default class WebsocketLoader extends Emitter {
             events: {proxy},
             demux,
         } = player;
+        const socket = new WebSocket(this.wsUrl);
 
-        this.socket = new WebSocket(this.wsUrl);
-        this.socket.binaryType = 'arraybuffer';
-        proxy(this.socket, 'open', () => {
+        socketWeakMap.set(this.player.stream, socket);
+
+        socket.binaryType = 'arraybuffer';
+        proxy(socket, 'open', () => {
             this.emit(EVENTS.streamSuccess);
             debug.log('websocketLoader', 'socket open');
             this.socketStatus = WEBSOCKET_STATUS.open;
         });
 
-        proxy(this.socket, 'message', event => {
+        proxy(socket, 'message', event => {
             this.streamRate && this.streamRate(event.data.byteLength);
             this._handleMessage(event.data);
         });
 
-
-        proxy(this.socket, 'close', () => {
+        proxy(socket, 'close', () => {
             debug.log('websocketLoader', 'socket close');
             this.emit(EVENTS.streamEnd);
             this.socketStatus = WEBSOCKET_STATUS.close;
+            this.destroy()
+            player.replay()
         });
 
-        proxy(this.socket, 'error', error => {
+        proxy(socket, 'error', error => {
             debug.log('websocketLoader', 'socket error');
             this.emit(EVENTS_ERROR.websocketError, error);
             this.player.emit(EVENTS.error, EVENTS_ERROR.websocketError);
@@ -79,7 +87,7 @@ export default class WebsocketLoader extends Emitter {
     fetchStream(url) {
         this.player._times.streamStart = now();
         this.wsUrl = url;
-        this._createWebSocket();
+        this._createWebSocket(url);
     }
 
 

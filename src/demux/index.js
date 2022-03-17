@@ -1,6 +1,6 @@
 import FlvLoader from "./flvLoader";
 import M7sLoader from "./m7sLoader";
-import {DEMUX_TYPE} from "../constant";
+import {DEMUX_TYPE, MEDIA_TYPE} from "../constant";
 
 export default class Demux {
     constructor(player) {

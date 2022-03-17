@@ -116,8 +116,12 @@ export default class Player extends Emitter {
                 this.webcodecsDecoder = new WebcodecsDecoder(this)
             }
 
-            if (this._opt.useMSE) {
-                this.mseDecoder = new MseDecoder(this);
+            try {
+                if (this._opt.useMSE) {
+                    this.mseDecoder = new MseDecoder(this);
+                }
+            } catch (error) {
+                console.log(error)
             }
         }
 
@@ -158,6 +162,11 @@ export default class Player extends Emitter {
 
         this._times = initPlayTimes();
 
+        if (this.stream) {
+            this.stream.destroy();
+            this.stream = null;
+        }
+
         if (this.decoderWorker) {
             this.decoderWorker.destroy();
             this.decoderWorker = null;
@@ -170,11 +179,6 @@ export default class Player extends Emitter {
         if (this.audio) {
             this.audio.destroy();
             this.audio = null;
-        }
-
-        if (this.stream) {
-            this.stream.destroy();
-            this.stream = null;
         }
 
         if (this.recorder) {
@@ -201,7 +205,6 @@ export default class Player extends Emitter {
             this.demux.destroy();
             this.demux = null;
         }
-
 
         if (this.events) {
             this.events.destroy();
@@ -387,6 +390,37 @@ export default class Player extends Emitter {
         })
     }
 
+    replay () {
+        try {
+            this.video.resetVideo();
+
+            if (this.stream) {
+                this.stream.destroy()
+                this.stream = null;
+            }
+
+            if (this.decoderWorker) {
+                this.decoderWorker.destroy();
+                this.decoderWorker = null;
+                this.decoderWorker = new DecoderWorker(this);
+            }
+
+            if (this.demux) {
+                this.demux.destroy()
+                this.demux = null;
+            }
+
+            if (this.mseDecoder) {
+                this.mseDecoder.destroy();
+                this.mseDecoder = null;
+            }
+
+            this.play(this._opt.url)
+        } catch (e) {
+            console.error(e)
+        }
+    }
+
     /**
      *
      * @param url
@@ -445,29 +479,34 @@ export default class Player extends Emitter {
 
                     this.enableWakeLock();
 
-                    this.stream.fetchStream(url);
+                    if (this.stream) {
+                        this.stream.fetchStream(url);
+                    }
 
                     //
                     this.checkLoadingTimeout();
-                    // fetch error
-                    this.stream.once(EVENTS_ERROR.fetchError, (error) => {
-                        reject(error)
-                    })
 
-                    // ws
-                    this.stream.once(EVENTS_ERROR.websocketError, (error) => {
-                        reject(error)
-                    })
+                    if (this.stream) {
+                        // fetch error
+                        this.stream.once(EVENTS_ERROR.fetchError, (error) => {
+                            reject(error)
+                        })
 
-                    // success
-                    this.stream.once(EVENTS.streamSuccess, () => {
-                        resolve();
-                        this._times.streamResponse = now();
-                        //
-                        if (this._opt.useMSE) {
-                            this.video.play();
-                        }
-                    })
+                        // ws
+                        this.stream.once(EVENTS_ERROR.websocketError, (error) => {
+                            reject(error)
+                        })
+
+                        // success
+                        this.stream.once(EVENTS.streamSuccess, () => {
+                            resolve();
+                            this._times.streamResponse = now();
+                            //
+                            if (this._opt.useMSE) {
+                                this.video.play();
+                            }
+                        })
+                    }
 
                 }).catch((e) => {
                     reject(e)
