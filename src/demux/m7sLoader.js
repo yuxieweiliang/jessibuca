@@ -11,11 +11,13 @@ export default class M7sLoader extends CommonLoader {
     destroy() {
         super.destroy();
         this.player.debug.log('M7sDemux', 'destroy')
+        this.dispatch = null
+        this.player = null
     }
 
     dispatch(data) {
         const player = this.player;
-        const {decoderWorker, webcodecsDecoder, mseDecoder} = player;
+        // const {decoderWorker, webcodecsDecoder, mseDecoder} = player;
         const dv = new DataView(data)
         const type = dv.getUint8(0);
         const ts = dv.getUint32(1, false);
@@ -55,6 +57,9 @@ export default class M7sLoader extends CommonLoader {
                             this._doDecode(payload, type, ts, isIframe)
                             if (dv && dv.slice) {
                                 dv.slice(dv.byteLength)
+                            }
+                            if (payload && payload.slice) {
+                                payload.slice(payload.byteLength)
                             }
                         }
                     }

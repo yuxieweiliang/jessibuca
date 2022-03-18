@@ -6,7 +6,6 @@ import {parseHEVCDecoderConfigurationRecord} from "../utils/h265";
 import {now} from "../utils";
 
 
-var length = {}
 export default class MseDecoder extends Emitter {
     constructor(player) {
         super();
@@ -44,10 +43,19 @@ export default class MseDecoder extends Emitter {
 
     destroy() {
         this.stop();
-        this.bufferList = [];
-        this.mediaSource = null;
+        if (this.sourceBuffer) {
+            if (this.mediaSource) {
+                this.mediaSource.removeSourceBuffer(this.sourceBuffer);
+            }
+            this.mediaSource = null;
+            this.sourceBuffer = null;
+        }
+
+        if (Array.isArray(this.bufferList)) {
+            this.bufferList.length = 0
+        }
+
         this.mediaSourceOpen = false;
-        this.sourceBuffer = null;
         this.hasInit = false;
         this.isInitInfo = false;
         this.sequenceNumber = 0;
@@ -185,7 +193,7 @@ export default class MseDecoder extends Emitter {
                 this.appendBuffer(result.buffer)
             }
             player.handleRender();
-            player.updateStats({fps: true, ts: ts, buf: player.demux.delay})
+            player.updateStats({fps: true, ts: ts, buf: player.demux ? player.demux.delay : {}})
             if (!player._times.videoStart) {
                 player._times.videoStart = now();
                 player.handlePlayToRenderTimes()
@@ -232,15 +240,6 @@ export default class MseDecoder extends Emitter {
             player.video.initCanvasViewSize();
             this.isInitInfo = true;
         }
-
-        if (ts % 10000 === 0) {
-            length[ts] = (length[ts] || 0) + 1
-            console.log(ts, length)
-        }
-
-        if (ts > 60 * 1000) {
-            this.player.replay()
-        }
     }
 
     async appendBuffer(buffer) {
@@ -259,6 +258,9 @@ export default class MseDecoder extends Emitter {
                 this.player.emit(EVENTS.mseSourceBufferError, error);
                 this.dropSourceBuffer(true)
             })
+        } else {
+            // this.player.replay()
+            // return
         }
 
         // 上一块数据还在添加中
@@ -267,21 +269,20 @@ export default class MseDecoder extends Emitter {
         }
 
         if (this.sourceBuffer.updating === false && this.isStateOpen) {
-            // proxy(this.sourceBuffer, 'updateend', (_) => {
-            //     // this.mediaSource.endOfStream();
-            //     // $video.play()
-            //     // console.log('updateend')
-            // })
             try {
                 this.sourceBuffer.appendBuffer(buffer);
+                if (buffer && buffer.slice) {
+                    buffer.slice(buffer.byteLength)
+                }
             } catch (error) {
                 // console.error('error: => ', error)
                 console.error('error: => sourceBuffer => appendBuffer')
-                // this.dropSourceBuffer(true)
                 this.player.replay()
             }
             return;
         }
+
+        // console.log(this.sourceBuffer.updating, this.mediaSource.readyState, this.isStateOpen)
 
         if (this.isStateClosed) {
             this.player.emit(EVENTS.mseSourceBufferError, 'mediaSource is not attached to video or mediaSource is closed')

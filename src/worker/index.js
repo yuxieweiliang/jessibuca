@@ -6,7 +6,7 @@ import {now} from "../utils";
 export default class DecoderWorker {
     constructor(player) {
         this.player = player;
-        if (player._opt.useWebRTC) {
+        if (player._opt.useWebRTC || player._opt.useMSE) {
             setTimeout(this.__initWebRTCStatus.bind(this), 200)
         } else {
             this.decoderWorker = new Worker(player._opt.decoder)

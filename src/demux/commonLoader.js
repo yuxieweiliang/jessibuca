@@ -16,14 +16,20 @@ export default class CommonLoader extends Emitter {
     }
 
     destroy() {
-        if (this.stopId) {
-            clearInterval(this.stopId);
-            this.stopId = null;
+        if (this.player.weak.has(this.player.demux)) {
+            clearInterval(this.player.weak.get(this.player.demux));
+            this.player.weak.delete(this.player.demux)
+            this.initInterval = null;
         }
         this.firstTimestamp = null;
         this.startTimestamp = null;
         this.delay = -1;
-        this.bufferList = [];
+        if (Array.isArray(this.bufferList)) {
+            this.bufferList.length = 0
+            this.bufferList = [];
+        } else {
+            this.bufferList = [];
+        }
         this.dropping = false;
         this.off();
     }
@@ -58,8 +64,13 @@ export default class CommonLoader extends Emitter {
 
         let _loop = () => {
             let data;
-            // console.log(videoBuffer, this.delay)
             if (this.bufferList.length) {
+                if (this.bufferList.length > 20) {
+                    // console.log(this.bufferList)
+                    this.bufferList.slice(this.bufferList.length - 2)
+                    // console.log(this.bufferList)
+                }
+
                 if (this.dropping) {
                     // this.player.debug.log('common dumex', `is dropping`);
                     data = this.bufferList.shift();
@@ -70,12 +81,20 @@ export default class CommonLoader extends Emitter {
                         data = this.bufferList.shift();
                         if (data.type === MEDIA_TYPE.audio && data.payload[1] === 0) {
                             this._doDecoderDecode(data);
+
+                            if (data && data.slice) {
+                                data.slice(data.byteLength)
+                            }
                         }
                     }
                     // i frame
                     if (data.isIFrame) {
                         this.dropping = false;
                         this._doDecoderDecode(data);
+
+                        if (data && data.slice) {
+                            data.slice(data.byteLength)
+                        }
                     }
                 } else {
                     data = this.bufferList[0];
@@ -99,41 +118,52 @@ export default class CommonLoader extends Emitter {
                                 // this.player.debug.log('common dumex', `delay is ${this.delay}`);
                                 break;
                             }
+
+                            if (data && data.slice) {
+                                data.slice(data.byteLength)
+                            }
                         }
                     }
                 }
             }
         }
+
         _loop();
-        this.stopId = setInterval(_loop, 10)
+
+        this.player.weak.set(this.player.demux, setInterval(_loop, 10))
     }
 
     _doDecode(payload, type, ts, isIFrame) {
         const player = this.player;
-        const {decoderWorker} = player;
         let options = {
             ts: ts,
             type: type,
             isIFrame: false
         }
+
         // use offscreen
-        if (player._opt.useWCS && !player._opt.useOffscreen) {
-            if (type === MEDIA_TYPE.video) {
-                options.isIFrame = isIFrame;
-            }
-            this.pushBuffer(payload, options)
-        } else if (player._opt.useMSE) {
+        if (player._opt.useMSE) {
+            // console.log(payload, options)
             // use mse
             if (type === MEDIA_TYPE.video) {
                 options.isIFrame = isIFrame;
             }
             this.pushBuffer(payload, options)
         } else {
-            //
-            if (type === MEDIA_TYPE.video) {
-                decoderWorker.decodeVideo(payload, ts, isIFrame);
-            } else if (type === MEDIA_TYPE.audio) {
-                decoderWorker.decodeAudio(payload, ts);
+            const {decoderWorker} = player;
+
+            if (player._opt.useWCS && !player._opt.useOffscreen) {
+                if (type === MEDIA_TYPE.video) {
+                    options.isIFrame = isIFrame;
+                }
+                this.pushBuffer(payload, options)
+            } else {
+                //
+                if (type === MEDIA_TYPE.video) {
+                    decoderWorker.decodeVideo(payload, ts, isIFrame);
+                } else if (type === MEDIA_TYPE.audio) {
+                    decoderWorker.decodeAudio(payload, ts);
+                }
             }
         }
     }
@@ -168,6 +198,10 @@ export default class CommonLoader extends Emitter {
                 type: MEDIA_TYPE.video,
                 isIFrame: options.isIFrame
             })
+        }
+
+        if (!(this.bufferList.length % 100)) {
+            console.log(this.bufferList)
         }
     }
 

@@ -1309,13 +1309,28 @@
 	      proxy
 	    } = this.player.events;
 	    proxy(this.$videoElement, 'canplay', () => {
+	      // console.log("准备就绪");
 	      this.player.debug.log('Video', 'canplay');
 	    });
 	    proxy(this.$videoElement, 'waiting', () => {
 	      this.player.emit(EVENTS.videoWaiting);
 	    });
 	    proxy(this.$videoElement, 'timeupdate', event => {// this.player.emit(EVENTS.videoTimeUpdate, event.timeStamp);
-	    });
+	    }); //监听播放开始
+	    // this.$videoElement.addEventListener('play', function(){
+	    //     console.log("开始播放");
+	    // });
+	    //
+	    // //监听播放结束
+	    // this.$videoElement.addEventListener('pause', function(){
+	    //     console.log("播放暂停");
+	    // });
+	    //
+	    // //监听播放结束
+	    // this.$videoElement.addEventListener('ended', function(){
+	    //     console.log("播放结束");
+	    // });
+
 	    this.player.debug.log('Video', 'init');
 	  }
 
@@ -9467,7 +9482,6 @@
 	  return meta;
 	}
 
-	var length = {};
 	class MseDecoder extends Emitter {
 	  constructor(player) {
 	    super();
@@ -9503,10 +9517,21 @@
 
 	  destroy() {
 	    this.stop();
-	    this.bufferList = [];
-	    this.mediaSource = null;
+
+	    if (this.sourceBuffer) {
+	      if (this.mediaSource) {
+	        this.mediaSource.removeSourceBuffer(this.sourceBuffer);
+	      }
+
+	      this.mediaSource = null;
+	      this.sourceBuffer = null;
+	    }
+
+	    if (Array.isArray(this.bufferList)) {
+	      this.bufferList.length = 0;
+	    }
+
 	    this.mediaSourceOpen = false;
-	    this.sourceBuffer = null;
 	    this.hasInit = false;
 	    this.isInitInfo = false;
 	    this.sequenceNumber = 0;
@@ -9652,7 +9677,7 @@
 	      player.updateStats({
 	        fps: true,
 	        ts: ts,
-	        buf: player.demux.delay
+	        buf: player.demux ? player.demux.delay : {}
 	      });
 
 	      if (!player._times.videoStart) {
@@ -9700,15 +9725,6 @@
 	      player.video.initCanvasViewSize();
 	      this.isInitInfo = true;
 	    }
-
-	    if (ts % 10000 === 0) {
-	      length[ts] = (length[ts] || 0) + 1;
-	      console.log(ts, length);
-	    }
-
-	    if (ts > 60 * 1000) {
-	      this.player.replay();
-	    }
 	  }
 
 	  async appendBuffer(buffer) {
@@ -9737,22 +9753,21 @@
 	    }
 
 	    if (this.sourceBuffer.updating === false && this.isStateOpen) {
-	      // proxy(this.sourceBuffer, 'updateend', (_) => {
-	      //     // this.mediaSource.endOfStream();
-	      //     // $video.play()
-	      //     // console.log('updateend')
-	      // })
 	      try {
 	        this.sourceBuffer.appendBuffer(buffer);
+
+	        if (buffer && buffer.slice) {
+	          buffer.slice(buffer.byteLength);
+	        }
 	      } catch (error) {
 	        // console.error('error: => ', error)
-	        console.error('error: => sourceBuffer => appendBuffer'); // this.dropSourceBuffer(true)
-
+	        console.error('error: => sourceBuffer => appendBuffer');
 	        this.player.replay();
 	      }
 
 	      return;
-	    }
+	    } // console.log(this.sourceBuffer.updating, this.mediaSource.readyState, this.isStateOpen)
+
 
 	    if (this.isStateClosed) {
 	      this.player.emit(EVENTS.mseSourceBufferError, 'mediaSource is not attached to video or mediaSource is closed');
@@ -9810,7 +9825,7 @@
 	  constructor(player) {
 	    this.player = player;
 
-	    if (player._opt.useWebRTC) {
+	    if (player._opt.useWebRTC || player._opt.useMSE) {
 	      setTimeout(this.__initWebRTCStatus.bind(this), 200);
 	    } else {
 	      this.decoderWorker = new Worker(player._opt.decoder);
@@ -9999,6 +10014,84 @@
 	class CommonLoader extends Emitter {
 	  constructor(player) {
 	    super();
+
+	    _defineProperty(this, "initInterval", () => {
+	      let data;
+
+	      if (this.bufferList.length) {
+	        if (this.bufferList.length > 20) {
+	          // console.log(this.bufferList)
+	          this.bufferList.slice(this.bufferList.length - 2); // console.log(this.bufferList)
+	        }
+
+	        if (this.dropping) {
+	          // this.player.debug.log('common dumex', `is dropping`);
+	          data = this.bufferList.shift();
+
+	          if (data.type === MEDIA_TYPE.audio && data.payload[1] === 0) {
+	            this._doDecoderDecode(data);
+	          }
+
+	          while (!data.isIFrame && this.bufferList.length) {
+	            data = this.bufferList.shift();
+
+	            if (data.type === MEDIA_TYPE.audio && data.payload[1] === 0) {
+	              this._doDecoderDecode(data);
+
+	              if (data && data.slice) {
+	                data.slice(data.byteLength);
+	              }
+	            }
+	          } // i frame
+
+
+	          if (data.isIFrame) {
+	            this.dropping = false;
+
+	            this._doDecoderDecode(data);
+
+	            if (data && data.slice) {
+	              data.slice(data.byteLength);
+	            }
+	          }
+	        } else {
+	          data = this.bufferList[0];
+
+	          if (this.getDelay(data.ts) === -1) {
+	            // this.player.debug.log('common dumex', `delay is -1`);
+	            this.bufferList.shift();
+
+	            this._doDecoderDecode(data);
+	          } else if (this.delay > this.player._opt.videoBuffer + 1000) {
+	            // this.player.debug.log('common dumex', `delay is ${this.delay}, set dropping is true`);
+	            this.resetDelay();
+	            this.dropping = true;
+	          } else {
+	            while (this.bufferList.length) {
+	              data = this.bufferList[0];
+
+	              if (this.getDelay(data.ts) > this.player._opt.videoBuffer) {
+	                // drop frame
+	                this.bufferList.shift();
+
+	                this._doDecoderDecode(data);
+	              } else {
+	                // this.player.debug.log('common dumex', `delay is ${this.delay}`);
+	                break;
+	              }
+
+	              if (data && data.slice) {
+	                data.slice(data.byteLength);
+	              }
+	            }
+	          }
+	        }
+	      }
+
+	      clearTimeout(this.stopId);
+	      this.stopId = setTimeout(this.initInterval, 10);
+	    });
+
 	    this.player = player;
 	    this.stopId = null;
 	    this.firstTimestamp = null;
@@ -10006,19 +10099,28 @@
 	    this.delay = -1;
 	    this.bufferList = [];
 	    this.dropping = false;
+	    this.player.debug.log('common dumex', `init Interval`);
 	    this.initInterval();
 	  }
 
 	  destroy() {
 	    if (this.stopId) {
-	      clearInterval(this.stopId);
+	      clearTimeout(this.stopId);
 	      this.stopId = null;
+	      this._loop = null;
 	    }
 
 	    this.firstTimestamp = null;
 	    this.startTimestamp = null;
 	    this.delay = -1;
-	    this.bufferList = [];
+
+	    if (Array.isArray(this.bufferList)) {
+	      this.bufferList.length = 0;
+	      this.bufferList = [];
+	    } else {
+	      this.bufferList = [];
+	    }
+
 	    this.dropping = false;
 	    this.off();
 	  }
@@ -10049,90 +10151,16 @@
 	  } //
 
 
-	  initInterval() {
-	    const videoBuffer = this.player._opt.videoBuffer;
-	    this.player.debug.log('common dumex', `init Interval`);
-
-	    let _loop = () => {
-	      let data; // console.log(videoBuffer, this.delay)
-
-	      if (this.bufferList.length) {
-	        if (this.dropping) {
-	          // this.player.debug.log('common dumex', `is dropping`);
-	          data = this.bufferList.shift();
-
-	          if (data.type === MEDIA_TYPE.audio && data.payload[1] === 0) {
-	            this._doDecoderDecode(data);
-	          }
-
-	          while (!data.isIFrame && this.bufferList.length) {
-	            data = this.bufferList.shift();
-
-	            if (data.type === MEDIA_TYPE.audio && data.payload[1] === 0) {
-	              this._doDecoderDecode(data);
-	            }
-	          } // i frame
-
-
-	          if (data.isIFrame) {
-	            this.dropping = false;
-
-	            this._doDecoderDecode(data);
-	          }
-	        } else {
-	          data = this.bufferList[0];
-
-	          if (this.getDelay(data.ts) === -1) {
-	            // this.player.debug.log('common dumex', `delay is -1`);
-	            this.bufferList.shift();
-
-	            this._doDecoderDecode(data);
-	          } else if (this.delay > videoBuffer + 1000) {
-	            // this.player.debug.log('common dumex', `delay is ${this.delay}, set dropping is true`);
-	            this.resetDelay();
-	            this.dropping = true;
-	          } else {
-	            while (this.bufferList.length) {
-	              data = this.bufferList[0];
-
-	              if (this.getDelay(data.ts) > videoBuffer) {
-	                // drop frame
-	                this.bufferList.shift();
-
-	                this._doDecoderDecode(data);
-	              } else {
-	                // this.player.debug.log('common dumex', `delay is ${this.delay}`);
-	                break;
-	              }
-	            }
-	          }
-	        }
-	      }
-	    };
-
-	    _loop();
-
-	    this.stopId = setInterval(_loop, 10);
-	  }
-
 	  _doDecode(payload, type, ts, isIFrame) {
 	    const player = this.player;
-	    const {
-	      decoderWorker
-	    } = player;
 	    let options = {
 	      ts: ts,
 	      type: type,
 	      isIFrame: false
 	    }; // use offscreen
 
-	    if (player._opt.useWCS && !player._opt.useOffscreen) {
-	      if (type === MEDIA_TYPE.video) {
-	        options.isIFrame = isIFrame;
-	      }
-
-	      this.pushBuffer(payload, options);
-	    } else if (player._opt.useMSE) {
+	    if (player._opt.useMSE) {
+	      // console.log(payload, options)
 	      // use mse
 	      if (type === MEDIA_TYPE.video) {
 	        options.isIFrame = isIFrame;
@@ -10140,11 +10168,23 @@
 
 	      this.pushBuffer(payload, options);
 	    } else {
-	      //
-	      if (type === MEDIA_TYPE.video) {
-	        decoderWorker.decodeVideo(payload, ts, isIFrame);
-	      } else if (type === MEDIA_TYPE.audio) {
-	        decoderWorker.decodeAudio(payload, ts);
+	      const {
+	        decoderWorker
+	      } = player;
+
+	      if (player._opt.useWCS && !player._opt.useOffscreen) {
+	        if (type === MEDIA_TYPE.video) {
+	          options.isIFrame = isIFrame;
+	        }
+
+	        this.pushBuffer(payload, options);
+	      } else {
+	        //
+	        if (type === MEDIA_TYPE.video) {
+	          decoderWorker.decodeVideo(payload, ts, isIFrame);
+	        } else if (type === MEDIA_TYPE.audio) {
+	          decoderWorker.decodeAudio(payload, ts);
+	        }
 	      }
 	    }
 	  }
@@ -10312,10 +10352,13 @@
 	  destroy() {
 	    super.destroy();
 	    this.player.debug.log('M7sDemux', 'destroy');
+	    this.dispatch = null;
+	    this.player = null;
 	  }
 
 	  dispatch(data) {
-	    const player = this.player;
+	    const player = this.player; // const {decoderWorker, webcodecsDecoder, mseDecoder} = player;
+
 	    const dv = new DataView(data);
 	    const type = dv.getUint8(0);
 	    const ts = dv.getUint32(1, false);
@@ -10362,6 +10405,10 @@
 
 	              if (dv && dv.slice) {
 	                dv.slice(dv.byteLength);
+	              }
+
+	              if (payload && payload.slice) {
+	                payload.slice(payload.byteLength);
 	              }
 	            }
 	          }
@@ -12620,6 +12667,7 @@ M512 85.333333C276.352 85.333333 85.333333 276.352 85.333333 512s191.018667 426.
 	      this._opt.controlReset(this);
 	    }
 
+	    console.log(this, this._opt);
 	    this.debug.log('Player options', this._opt);
 	  }
 
@@ -12868,7 +12916,6 @@ M512 85.333333C276.352 85.333333 85.333333 276.352 85.333333 512s191.018667 426.
 	      if (this.decoderWorker) {
 	        this.decoderWorker.destroy();
 	        this.decoderWorker = null;
-	        this.decoderWorker = new DecoderWorker(this);
 	      }
 
 	      if (this.demux) {
@@ -13447,7 +13494,33 @@ M512 85.333333C276.352 85.333333 85.333333 276.352 85.333333 512s191.018667 426.
 
 
 	  play(url) {
-	    // console.log('play')
+	    const temp = '34020000001420000123/34020000001320000001';
+
+	    if (this._opt.useWebRTC === true) {
+	      if (url.startsWith('rtmp:') || url.startsWith('rtsp:') || url.indexOf('streamPath') > -1) {
+	        console.log('WebRTC');
+	      } else {
+	        console.error(`WebRTC: url("${url}") 格式不正确！`);
+	        console.warn('参考格式： rtmp://xxx.xxx.x.xx:1935/' + temp);
+	        console.warn('参考格式： rtsp://xxx.xxx.x.xx:554/' + temp);
+	        console.warn('参考格式： http://xxx.xxx.x.xx:8081/api/webrtc/play?streamPath=' + temp);
+	        return;
+	      }
+	    } else {
+	      this._opt.useMSE = true;
+	      this._opt.useWCS = false;
+
+	      if (url.startsWith('ws:')) {
+	        console.log('WS-RAW');
+	      } else {
+	        console.error(`WS-RAW: url("${url}") 格式不正确！`);
+	        console.warn('参考格式： ws://xxx.xxx.x.xx:80/jessica/' + temp);
+	        console.warn(`参考格式： ws://xxx.xxx.x.xx:80/jessica/${temp}.flv`);
+	        return;
+	      }
+	    } // console.log('play')
+
+
 	    return new Promise((resolve, reject) => {
 	      if (!url && !this._opt.url) {
 	        this.emit(EVENTS.error, EVENTS_ERROR.playError);

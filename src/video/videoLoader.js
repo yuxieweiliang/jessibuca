@@ -30,6 +30,7 @@ export default class VideoLoader extends CommonLoader {
         const {proxy} = this.player.events;
 
         proxy(this.$videoElement, 'canplay', () => {
+            // console.log("准备就绪");
             this.player.debug.log('Video', 'canplay');
         })
 
@@ -40,6 +41,21 @@ export default class VideoLoader extends CommonLoader {
         proxy(this.$videoElement, 'timeupdate', (event) => {
             // this.player.emit(EVENTS.videoTimeUpdate, event.timeStamp);
         })
+
+        //监听播放开始
+        // this.$videoElement.addEventListener('play', function(){
+        //     console.log("开始播放");
+        // });
+//
+        // //监听播放结束
+        // this.$videoElement.addEventListener('pause', function(){
+        //     console.log("播放暂停");
+        // });
+//
+        // //监听播放结束
+        // this.$videoElement.addEventListener('ended', function(){
+        //     console.log("播放结束");
+        // });
 
         this.player.debug.log('Video', 'init');
     }

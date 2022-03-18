@@ -201,6 +201,29 @@ class Jessibuca extends Emitter {
      * @returns {Promise<unknown>}
      */
     play(url) {
+        const temp = '34020000001420000123/34020000001320000001'
+        if (this._opt.useWebRTC === true) {
+            if (url.startsWith('rtmp:') || url.startsWith('rtsp:') || url.indexOf('streamPath') > -1) {
+                console.log('WebRTC')
+            } else {
+                console.error(`WebRTC: url("${url}") 格式不正确！`)
+                console.warn('参考格式： rtmp://xxx.xxx.x.xx:1935/' + temp)
+                console.warn('参考格式： rtsp://xxx.xxx.x.xx:554/' + temp)
+                console.warn('参考格式： http://xxx.xxx.x.xx:8081/api/webrtc/play?streamPath=' + temp)
+                return;
+            }
+        } else {
+            this._opt.useMSE = true
+            this._opt.useWCS = false
+            if (url.startsWith('ws:')) {
+                console.log('WS-RAW')
+            } else {
+                console.error(`WS-RAW: url("${url}") 格式不正确！`)
+                console.warn('参考格式： ws://xxx.xxx.x.xx:80/jessica/' + temp)
+                console.warn(`参考格式： ws://xxx.xxx.x.xx:80/jessica/${temp}.flv`)
+                return;
+            }
+        }
         // console.log('play')
         return new Promise((resolve, reject) => {
             if (!url && !this._opt.url) {

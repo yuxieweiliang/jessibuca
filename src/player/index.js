@@ -35,6 +35,7 @@ export default class Player extends Emitter {
         this.$container = container;
         this._opt = Object.assign({}, DEFAULT_PLAYER_OPTIONS, options)
         this.debug = new Debug(this);
+        this.weak = new WeakMap();
 
         if (this._opt.useWCS) {
             this._opt.useWCS = supportWCS();
@@ -151,6 +152,7 @@ export default class Player extends Emitter {
             this._opt.controlReset(this)
         }
 
+        // console.log(this, this._opt)
         this.debug.log('Player options', this._opt);
     }
 
@@ -402,7 +404,6 @@ export default class Player extends Emitter {
             if (this.decoderWorker) {
                 this.decoderWorker.destroy();
                 this.decoderWorker = null;
-                this.decoderWorker = new DecoderWorker(this);
             }
 
             if (this.demux) {
@@ -414,6 +415,8 @@ export default class Player extends Emitter {
                 this.mseDecoder.destroy();
                 this.mseDecoder = null;
             }
+
+            this.clearCheckHeartTimeout()
 
             this.play(this._opt.url)
         } catch (e) {
