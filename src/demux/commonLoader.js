@@ -65,11 +65,6 @@ export default class CommonLoader extends Emitter {
         let _loop = () => {
             let data;
             if (this.bufferList.length) {
-                // if (this.bufferList.length > 20) {
-                //     // console.log(this.bufferList)
-                //     this.bufferList.slice(this.bufferList.length - 2)
-                //     // console.log(this.bufferList)
-                // }
 
                 if (this.dropping) {
                     // this.player.debug.log('common dumex', `is dropping`);
