@@ -114,6 +114,7 @@ export default class CommonLoader extends Emitter {
                                 if (this.bufferList.length > 20) {
                                     this.bufferList.shift();
                                     this._doDecoderDecode(data);
+                                    // media.decodeVideo(data.payload, data.ts, data.isIFrame);
                                 }
                                 // this.player.debug.log('common dumex', `delay is ${this.delay}`);
                                 break;
@@ -126,7 +127,8 @@ export default class CommonLoader extends Emitter {
 
         _loop();
 
-        this.player.weak.set(this.player.demux, setInterval(_loop, 10))
+        setInterval(_loop, 10);
+        // this.player.weak.set(this.player.demux, setInterval(_loop, 10))
     }
 
     _doDecode(payload, type, ts, isIFrame) {

@@ -89,14 +89,14 @@ export default (player, control) => {
         //
     }
 
-    player.on(EVENTS.recording, () => {
+    player.on(EVENTS.recording, (arg) => {
         setStyle(control.$record, 'display', player.recording ? 'none' : 'flex');
         setStyle(control.$recordStop, 'display', player.recording ? 'flex' : 'none');
     })
 
     //
     player.on(EVENTS.recordingTimestamp, (timestamp) => {
-        // console.log(timestamp);
+        console.log(timestamp);
     })
 
     player.on(EVENTS.playing, (flag) => {
