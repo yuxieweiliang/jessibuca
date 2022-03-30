@@ -65,11 +65,6 @@ export default class CommonLoader extends Emitter {
         let _loop = () => {
             let data;
             if (this.bufferList.length) {
-                if (this.bufferList.length > 20) {
-                    // console.log(this.bufferList)
-                    this.bufferList.slice(this.bufferList.length - 2)
-                    // console.log(this.bufferList)
-                }
 
                 if (this.dropping) {
                     // this.player.debug.log('common dumex', `is dropping`);
@@ -115,12 +110,13 @@ export default class CommonLoader extends Emitter {
                                 this.bufferList.shift()
                                 this._doDecoderDecode(data);
                             } else {
+                                // 保证数组不超过 20 位
+                                if (this.bufferList.length > 20) {
+                                    this.bufferList.shift();
+                                    this._doDecoderDecode(data);
+                                }
                                 // this.player.debug.log('common dumex', `delay is ${this.delay}`);
                                 break;
-                            }
-
-                            if (data && data.slice) {
-                                data.slice(data.byteLength)
                             }
                         }
                     }

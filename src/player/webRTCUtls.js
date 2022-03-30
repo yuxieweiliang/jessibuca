@@ -22,7 +22,7 @@ export function WebRtcPeerRecvOnly(option) {
 
 WebRtcPeerRecvOnly.prototype.generateOffer = async function generateOffer (option, callback) {
     if (typeof option === 'function') {
-        callback = option
+        callback = option;
         option = undefined
     }
     await  this.pc.setLocalDescription(await  this.pc.createOffer(option));
@@ -32,7 +32,7 @@ WebRtcPeerRecvOnly.prototype.generateOffer = async function generateOffer (optio
     }
 
     return this.pc.localDescription
-}
+};
 
 WebRtcPeerRecvOnly.prototype.processAnswer = async function processAnswer (sdp, callback) {
     if (typeof sdp === 'string') {
@@ -50,15 +50,17 @@ WebRtcPeerRecvOnly.prototype.processAnswer = async function processAnswer (sdp, 
     }
 
     return true
-}
+};
 
 WebRtcPeerRecvOnly.prototype.destroy = function () {
-    this.pc.close()
-    this.pc = null
-}
+    this.pc.close();
+    this.pc.onicecandidate = null;
+    this.pc = false;
+    this.pc = null;
+};
 
 export function webRtcRecvOnly(option, callback) {
-    const webRtc = new WebRtcPeerRecvOnly(option)
+    const webRtc = new WebRtcPeerRecvOnly(option);
 
     if (callback) {
         callback(webRtc)
