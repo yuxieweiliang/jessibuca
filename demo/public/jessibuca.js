@@ -8266,7 +8266,7 @@
 
 	    if (this.recorder) {
 	      this.isRecording = true;
-	      this.emit(EVENTS.recording, true);
+	      this.player.emit(EVENTS.recording, true);
 	      this.recorder.startRecording();
 	      debug.log('Recorder', 'start recording');
 	      this.player.emit(EVENTS.recordStart);
@@ -10014,84 +10014,6 @@
 	class CommonLoader extends Emitter {
 	  constructor(player) {
 	    super();
-
-	    _defineProperty(this, "initInterval", () => {
-	      let data;
-
-	      if (this.bufferList.length) {
-	        if (this.bufferList.length > 20) {
-	          // console.log(this.bufferList)
-	          this.bufferList.slice(this.bufferList.length - 2); // console.log(this.bufferList)
-	        }
-
-	        if (this.dropping) {
-	          // this.player.debug.log('common dumex', `is dropping`);
-	          data = this.bufferList.shift();
-
-	          if (data.type === MEDIA_TYPE.audio && data.payload[1] === 0) {
-	            this._doDecoderDecode(data);
-	          }
-
-	          while (!data.isIFrame && this.bufferList.length) {
-	            data = this.bufferList.shift();
-
-	            if (data.type === MEDIA_TYPE.audio && data.payload[1] === 0) {
-	              this._doDecoderDecode(data);
-
-	              if (data && data.slice) {
-	                data.slice(data.byteLength);
-	              }
-	            }
-	          } // i frame
-
-
-	          if (data.isIFrame) {
-	            this.dropping = false;
-
-	            this._doDecoderDecode(data);
-
-	            if (data && data.slice) {
-	              data.slice(data.byteLength);
-	            }
-	          }
-	        } else {
-	          data = this.bufferList[0];
-
-	          if (this.getDelay(data.ts) === -1) {
-	            // this.player.debug.log('common dumex', `delay is -1`);
-	            this.bufferList.shift();
-
-	            this._doDecoderDecode(data);
-	          } else if (this.delay > this.player._opt.videoBuffer + 1000) {
-	            // this.player.debug.log('common dumex', `delay is ${this.delay}, set dropping is true`);
-	            this.resetDelay();
-	            this.dropping = true;
-	          } else {
-	            while (this.bufferList.length) {
-	              data = this.bufferList[0];
-
-	              if (this.getDelay(data.ts) > this.player._opt.videoBuffer) {
-	                // drop frame
-	                this.bufferList.shift();
-
-	                this._doDecoderDecode(data);
-	              } else {
-	                // this.player.debug.log('common dumex', `delay is ${this.delay}`);
-	                break;
-	              }
-
-	              if (data && data.slice) {
-	                data.slice(data.byteLength);
-	              }
-	            }
-	          }
-	        }
-	      }
-
-	      clearTimeout(this.stopId);
-	      this.stopId = setTimeout(this.initInterval, 10);
-	    });
-
 	    this.player = player;
 	    this.stopId = null;
 	    this.firstTimestamp = null;
@@ -10099,15 +10021,14 @@
 	    this.delay = -1;
 	    this.bufferList = [];
 	    this.dropping = false;
-	    this.player.debug.log('common dumex', `init Interval`);
 	    this.initInterval();
 	  }
 
 	  destroy() {
-	    if (this.stopId) {
-	      clearTimeout(this.stopId);
-	      this.stopId = null;
-	      this._loop = null;
+	    if (this.player.weak.has(this.player.demux)) {
+	      clearInterval(this.player.weak.get(this.player.demux));
+	      this.player.weak.delete(this.player.demux);
+	      this.initInterval = null;
 	    }
 
 	    this.firstTimestamp = null;
@@ -10150,6 +10071,93 @@
 	    this.dropping = false;
 	  } //
 
+
+	  initInterval() {
+	    const videoBuffer = this.player._opt.videoBuffer;
+	    this.player.debug.log('common dumex', `init Interval`);
+
+	    let _loop = () => {
+	      let data;
+
+	      if (this.bufferList.length) {
+	        // if (this.bufferList.length > 20) {
+	        //     // console.log(this.bufferList)
+	        //     this.bufferList.slice(this.bufferList.length - 2)
+	        //     // console.log(this.bufferList)
+	        // }
+	        if (this.dropping) {
+	          // this.player.debug.log('common dumex', `is dropping`);
+	          data = this.bufferList.shift();
+
+	          if (data.type === MEDIA_TYPE.audio && data.payload[1] === 0) {
+	            this._doDecoderDecode(data);
+	          }
+
+	          while (!data.isIFrame && this.bufferList.length) {
+	            data = this.bufferList.shift();
+
+	            if (data.type === MEDIA_TYPE.audio && data.payload[1] === 0) {
+	              this._doDecoderDecode(data);
+
+	              if (data && data.slice) {
+	                data.slice(data.byteLength);
+	              }
+	            }
+	          } // i frame
+
+
+	          if (data.isIFrame) {
+	            this.dropping = false;
+
+	            this._doDecoderDecode(data);
+
+	            if (data && data.slice) {
+	              data.slice(data.byteLength);
+	            }
+	          }
+	        } else {
+	          data = this.bufferList[0];
+
+	          if (this.getDelay(data.ts) === -1) {
+	            // this.player.debug.log('common dumex', `delay is -1`);
+	            this.bufferList.shift();
+
+	            this._doDecoderDecode(data);
+	          } else if (this.delay > videoBuffer + 1000) {
+	            // this.player.debug.log('common dumex', `delay is ${this.delay}, set dropping is true`);
+	            this.resetDelay();
+	            this.dropping = true;
+	          } else {
+	            while (this.bufferList.length) {
+	              data = this.bufferList[0];
+
+	              if (this.getDelay(data.ts) > videoBuffer) {
+	                // drop frame
+	                this.bufferList.shift();
+
+	                this._doDecoderDecode(data);
+	              } else {
+	                // 保证数组不超过 20 位
+	                if (this.bufferList.length > 20) {
+	                  this.bufferList.shift();
+
+	                  this._doDecoderDecode(data); // media.decodeVideo(data.payload, data.ts, data.isIFrame);
+
+	                } // this.player.debug.log('common dumex', `delay is ${this.delay}`);
+
+
+	                break;
+	              }
+	            }
+	          }
+	        }
+	      }
+	    };
+
+	    _loop();
+
+	    setInterval(_loop, 10); // this.player.weak.set(this.player.demux, setInterval(_loop, 10))
+	  }
 
 	  _doDecode(payload, type, ts, isIFrame) {
 	    const player = this.player;
@@ -10223,6 +10231,10 @@
 	        type: MEDIA_TYPE.video,
 	        isIFrame: options.isIFrame
 	      });
+	    }
+
+	    if (!(this.bufferList.length % 100)) {
+	      console.log(this.bufferList);
 	    }
 	  }
 
@@ -11645,12 +11657,13 @@ M512 85.333333C276.352 85.333333 85.333333 276.352 85.333333 512s191.018667 426.
 	  } catch (error) {//
 	  }
 
-	  player.on(EVENTS.recording, () => {
+	  player.on(EVENTS.recording, arg => {
 	    setStyle(control.$record, 'display', player.recording ? 'none' : 'flex');
 	    setStyle(control.$recordStop, 'display', player.recording ? 'flex' : 'none');
 	  }); //
 
-	  player.on(EVENTS.recordingTimestamp, timestamp => {// console.log(timestamp);
+	  player.on(EVENTS.recordingTimestamp, timestamp => {
+	    console.log(timestamp);
 	  });
 	  player.on(EVENTS.playing, flag => {
 	    const playerWidth = player.width;
@@ -12378,6 +12391,8 @@ M512 85.333333C276.352 85.333333 85.333333 276.352 85.333333 512s191.018667 426.
 
 	WebRtcPeerRecvOnly.prototype.destroy = function () {
 	  this.pc.close();
+	  this.pc.onicecandidate = null;
+	  this.pc = false;
 	  this.pc = null;
 	};
 
@@ -12562,6 +12577,7 @@ M512 85.333333C276.352 85.333333 85.333333 276.352 85.333333 512s191.018667 426.
 	    this.$container = container;
 	    this._opt = Object.assign({}, DEFAULT_PLAYER_OPTIONS, options);
 	    this.debug = new Debug(this);
+	    this.weak = new WeakMap();
 
 	    if (this._opt.useWCS) {
 	      this._opt.useWCS = supportWCS();
@@ -12665,9 +12681,9 @@ M512 85.333333C276.352 85.333333 85.333333 276.352 85.333333 512s191.018667 426.
 
 	    if (typeof this._opt.controlReset === 'function') {
 	      this._opt.controlReset(this);
-	    }
+	    } // console.log(this, this._opt)
 
-	    console.log(this, this._opt);
+
 	    this.debug.log('Player options', this._opt);
 	  }
 
@@ -12928,6 +12944,7 @@ M512 85.333333C276.352 85.333333 85.333333 276.352 85.333333 512s191.018667 426.
 	        this.mseDecoder = null;
 	      }
 
+	      this.clearCheckHeartTimeout();
 	      this.play(this._opt.url);
 	    } catch (e) {
 	      console.error(e);

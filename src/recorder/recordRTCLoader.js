@@ -68,7 +68,7 @@ export default class RecordRTCLoader extends Emitter {
         }
         if (this.recorder) {
             this.isRecording = true;
-            this.emit(EVENTS.recording, true);
+            this.player.emit(EVENTS.recording, true);
             this.recorder.startRecording();
             debug.log('Recorder', 'start recording');
             this.player.emit(EVENTS.recordStart);
